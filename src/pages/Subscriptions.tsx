@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Eye, CreditCard, Loader2 } from "lucide-react";
+import { Eye, Crown, Loader2 } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -10,18 +10,17 @@ import {
   EmptyState,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { getPayments, type GetPaymentsParams } from "@/services/paymentsApi";
-import type { Payment } from "@/types/api";
+import { getSubscriptions, type GetSubscriptionsParams } from "@/services/subscriptionsApi";
+import type { Subscription } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export default function PaymentsPage() {
+export default function SubscriptionsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
-  const [paymentGatewayFilter, setPaymentGatewayFilter] = useState<string>("all");
+  const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<string>("all");
   const [currencyFilter, setCurrencyFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -43,11 +42,11 @@ export default function PaymentsPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, paymentMethodFilter, paymentGatewayFilter, currencyFilter]);
+  }, [statusFilter, subscriptionTypeFilter, currencyFilter]);
 
   // Build query params
-  const queryParams: GetPaymentsParams = useMemo(() => {
-    const params: GetPaymentsParams = {
+  const queryParams: GetSubscriptionsParams = useMemo(() => {
+    const params: GetSubscriptionsParams = {
       page,
       limit,
     };
@@ -57,15 +56,11 @@ export default function PaymentsPage() {
     }
 
     if (statusFilter !== "all") {
-      params.status = statusFilter as "pending" | "completed" | "failed" | "refunded";
+      params.status = statusFilter as "active" | "past_due" | "canceled" | "incomplete" | "incomplete_expired" | "trialing" | "unpaid";
     }
 
-    if (paymentMethodFilter !== "all") {
-      params.paymentMethod = paymentMethodFilter as "card" | "bank_transfer" | "wallet";
-    }
-
-    if (paymentGatewayFilter !== "all") {
-      params.paymentGateway = paymentGatewayFilter as "stripe" | "paystack";
+    if (subscriptionTypeFilter !== "all") {
+      params.subscriptionType = subscriptionTypeFilter as "monthly" | "yearly";
     }
 
     if (currencyFilter !== "all") {
@@ -73,33 +68,35 @@ export default function PaymentsPage() {
     }
 
     return params;
-  }, [debouncedSearch, statusFilter, paymentMethodFilter, paymentGatewayFilter, currencyFilter, page, limit]);
+  }, [debouncedSearch, statusFilter, subscriptionTypeFilter, currencyFilter, page, limit]);
 
-  // Fetch payments
+  // Fetch subscriptions
   const {
-    data: paymentsResponse,
+    data: subscriptionsResponse,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["payments", queryParams],
-    queryFn: () => getPayments(queryParams),
+    queryKey: ["subscriptions", queryParams],
+    queryFn: () => getSubscriptions(queryParams),
     retry: 1,
   });
 
   // Parse dates from API response (dates come as strings from JSON)
-  const payments = useMemo(() => {
-    return (paymentsResponse?.data?.payments || []).map((payment) => ({
-      ...payment,
-      paidAt: payment.paidAt ? new Date(payment.paidAt) : undefined,
-      createdAt: new Date(payment.createdAt),
-      updatedAt: new Date(payment.updatedAt),
+  const subscriptions = useMemo(() => {
+    return (subscriptionsResponse?.data?.subscriptions || []).map((subscription) => ({
+      ...subscription,
+      currentPeriodStart: new Date(subscription.currentPeriodStart),
+      currentPeriodEnd: new Date(subscription.currentPeriodEnd),
+      canceledAt: subscription.canceledAt ? new Date(subscription.canceledAt) : undefined,
+      createdAt: new Date(subscription.createdAt),
+      updatedAt: new Date(subscription.updatedAt),
     }));
-  }, [paymentsResponse?.data?.payments]);
+  }, [subscriptionsResponse?.data?.subscriptions]);
 
   // Handle pagination meta (API returns totalDocs instead of total)
   const paginationMeta = useMemo(() => {
-    const meta = paymentsResponse?.data?.meta;
+    const meta = subscriptionsResponse?.data?.meta;
     if (!meta) return undefined;
     
     // Handle inconsistent API response format
@@ -112,35 +109,32 @@ export default function PaymentsPage() {
       total: (rawMeta.totalDocs as number) || meta.total || 0,
       hasPrevPage: (rawMeta.hasPreviousPage as boolean) ?? meta.hasPrevPage,
     };
-  }, [paymentsResponse?.data?.meta]);
+  }, [subscriptionsResponse?.data?.meta]);
 
   // Handle errors
   useEffect(() => {
     if (isError) {
       toast({
-        title: "Error loading payments",
-        description: error instanceof Error ? error.message : "Failed to fetch payments",
+        title: "Error loading subscriptions",
+        description: error instanceof Error ? error.message : "Failed to fetch subscriptions",
         variant: "destructive",
       });
     }
   }, [isError, error, toast]);
 
   const statusOptions = [
-    { value: "pending", label: "Pending" },
-    { value: "completed", label: "Completed" },
-    { value: "failed", label: "Failed" },
-    { value: "refunded", label: "Refunded" },
+    { value: "active", label: "Active" },
+    { value: "past_due", label: "Past Due" },
+    { value: "canceled", label: "Canceled" },
+    { value: "incomplete", label: "Incomplete" },
+    { value: "incomplete_expired", label: "Incomplete Expired" },
+    { value: "trialing", label: "Trialing" },
+    { value: "unpaid", label: "Unpaid" },
   ];
 
-  const paymentMethodOptions = [
-    { value: "card", label: "Card" },
-    { value: "bank_transfer", label: "Bank Transfer" },
-    { value: "wallet", label: "Wallet" },
-  ];
-
-  const paymentGatewayOptions = [
-    { value: "stripe", label: "Stripe" },
-    { value: "paystack", label: "Paystack" },
+  const subscriptionTypeOptions = [
+    { value: "monthly", label: "Monthly" },
+    { value: "yearly", label: "Yearly" },
   ];
 
   const currencyOptions = [
@@ -155,7 +149,10 @@ export default function PaymentsPage() {
       USD: "$",
       NGN: "₦",
     };
-    return `${symbols[currency] || currency}${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    // Amount is in lowest unit (cents/pence/kobo), divide by 100
+    const actualAmount = price / 100;
+    const currencyUpper = currency.toUpperCase();
+    return `${symbols[currencyUpper] || currencyUpper}${actualAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   const formatDate = (date: Date) => {
@@ -175,15 +172,15 @@ export default function PaymentsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Payments"
-        description="View and manage all platform payments"
+        title="Subscriptions"
+        description="Manage subscription plans and vendor subscriptions"
       />
 
       <div className="filter-bar">
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search payments..."
+          placeholder="Search subscriptions..."
         />
         <FilterSelect
           value={statusFilter}
@@ -193,18 +190,11 @@ export default function PaymentsPage() {
           allLabel="All Statuses"
         />
         <FilterSelect
-          value={paymentMethodFilter}
-          onChange={setPaymentMethodFilter}
-          placeholder="Payment Method"
-          options={paymentMethodOptions}
-          allLabel="All Methods"
-        />
-        <FilterSelect
-          value={paymentGatewayFilter}
-          onChange={setPaymentGatewayFilter}
-          placeholder="Gateway"
-          options={paymentGatewayOptions}
-          allLabel="All Gateways"
+          value={subscriptionTypeFilter}
+          onChange={setSubscriptionTypeFilter}
+          placeholder="Type"
+          options={subscriptionTypeOptions}
+          allLabel="All Types"
         />
         <FilterSelect
           value={currencyFilter}
@@ -219,15 +209,15 @@ export default function PaymentsPage() {
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : payments.length === 0 ? (
+      ) : subscriptions.length === 0 ? (
         <div className="card">
           <EmptyState
-            icon={<CreditCard className="h-12 w-12" />}
-            title="No payments found"
+            icon={<Crown className="h-12 w-12" />}
+            title="No subscriptions found"
             description={
-              search || statusFilter !== "all" || paymentMethodFilter !== "all" || paymentGatewayFilter !== "all" || currencyFilter !== "all"
+              search || statusFilter !== "all" || subscriptionTypeFilter !== "all" || currencyFilter !== "all"
                 ? "Try adjusting your search or filters"
-                : "Payments will appear here once transactions are processed"
+                : "Subscriptions will appear here once vendors subscribe to plans"
             }
           />
         </div>
@@ -237,82 +227,71 @@ export default function PaymentsPage() {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Reference</th>
-                  <th>User</th>
-                  <th>Type</th>
-                  <th>Method</th>
+                  <th>Vendor</th>
+                  <th>Plan</th>
                   <th>Amount</th>
                   <th>Status</th>
-                  <th>Date</th>
+                  <th>Period</th>
+                  <th>Renews</th>
                   <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {payments.map((payment) => (
-                  <tr key={payment.id}>
-                    <td>
-                      <span className="font-mono text-foreground text-sm">
-                        {payment.paymentReference}
-                      </span>
-                    </td>
+                {subscriptions.map((subscription) => (
+                  <tr key={subscription.id}>
                     <td>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(payment.metadata?.contactInfo?.name || "??")}
+                            {getInitials(subscription.user.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium text-foreground capitalize">
-                            {payment.metadata?.contactInfo?.name || "Unknown"}
+                            {subscription.user.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {payment.metadata?.contactInfo?.email || "—"}
+                            {subscription.user.email}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="text-muted-foreground capitalize">
-                      {payment.paymentType.replace(/_/g, " ")}
-                    </td>
-                    <td>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="capitalize text-foreground text-sm">
-                          {payment.paymentMethod.replace(/_/g, " ")}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          via {payment.paymentGateway}
-                        </span>
-                      </div>
-                    </td>
                     <td>
                       <p className="font-medium text-foreground">
-                        {formatPrice(payment.amount, payment.currency)}
+                        {subscription.plan.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {subscription.subscriptionType === "monthly" ? "Monthly" : subscription.subscriptionType === "yearly" ? "Yearly" : subscription.subscriptionType}
                       </p>
                     </td>
                     <td>
-                      <StatusBadge status={payment.status} />
+                      <p className="font-medium text-foreground">
+                        {formatPrice(subscription.amount, subscription.currency.toUpperCase())}
+                      </p>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        per {subscription.subscriptionType === "monthly" ? "month" : subscription.subscriptionType === "yearly" ? "year" : subscription.subscriptionType}
+                      </p>
                     </td>
                     <td>
-                      {payment.paidAt ? (
-                        <>
-                          <p className="text-foreground">{formatDate(payment.paidAt)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(payment.paidAt).toLocaleTimeString("en-GB", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </>
+                      <StatusBadge status={subscription.status} />
+                    </td>
+                    <td>
+                      <p className="text-sm text-foreground">
+                        {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
+                      </p>
+                    </td>
+                    <td>
+                      {subscription.cancelAtPeriodEnd ? (
+                        <span className="text-sm text-muted-foreground">Cancels at period end</span>
                       ) : (
-                        <span className="text-muted-foreground">—</span>
+                        <span className="text-sm text-foreground">{formatDate(subscription.currentPeriodEnd)}</span>
                       )}
                     </td>
                     <td className="text-center">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/payments/${payment.id}`)}
+                        onClick={() => navigate(`/subscriptions/${subscription.id}`)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -328,7 +307,7 @@ export default function PaymentsPage() {
               <div className="text-sm text-muted-foreground">
                 Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
                 {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} payments
+                {paginationMeta.total} subscriptions
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -358,3 +337,4 @@ export default function PaymentsPage() {
     </div>
   );
 }
+

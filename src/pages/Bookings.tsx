@@ -79,6 +79,7 @@ export default function BookingsPage() {
           onChange={setStatusFilter}
           placeholder="Status"
           options={statusOptions}
+          allLabel="All Statuses"
         />
       </div>
 

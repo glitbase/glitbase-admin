@@ -189,6 +189,10 @@
     @apply bg-success/10 text-success;
   }
 
+  .status-badge.refunded {
+    @apply bg-blue-500/10 text-blue-600 dark:text-blue-400;
+  }
+
   .status-badge.rejected, .status-badge.failed {
     @apply bg-destructive/10 text-destructive;
   }

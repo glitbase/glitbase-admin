@@ -1,6 +1,6 @@
 // API Types based on PRD
 
-export interface IApiResponse<T = Record<string, any>> {
+export interface IApiResponse<T = Record<string, unknown>> {
   status: boolean;
   message: string;
   data: T;
@@ -21,9 +21,15 @@ export type VendorOnboardingStatus = "pending" | "completed" | "approved" | "rej
 
 export type SubscriptionType = "none" | "commission" | "monthly" | "yearly";
 
+export type SubscriptionStatus = "active" | "past_due" | "canceled" | "incomplete" | "incomplete_expired" | "trialing" | "unpaid";
+
 export type BookingStatus = "pending" | "confirmed" | "in_progress" | "completed" | "cancelled" | "rejected";
 
 export type PaymentStatus = "pending" | "completed" | "failed" | "refunded";
+
+export type PayoutStatus = "pending_approval" | "approved" | "processing" | "completed" | "failed" | "cancelled";
+
+export type PayoutMethod = "bank_transfer" | "mobile_money" | "paypal" | "stripe_connect";
 
 export type ReportStatus = "pending" | "reviewing" | "resolved" | "dismissed";
 
@@ -129,27 +135,36 @@ export interface Store {
 export interface Booking {
   id: string;
   bookingReference: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  user: string; // User ID
   store: {
     id: string;
     name: string;
-    owner: {
-      id: string;
+    bannerImageUrl?: string;
+    location?: {
       name: string;
+      address: string;
+      city: string;
+      state: string;
     };
   };
   serviceType: string;
   serviceDate: Date;
   serviceTime: string;
+  contactInfo: {
+    name: string;
+    email: string;
+    phoneNumber: string;
+  };
   pricing: {
     subtotal: number;
     amountPaid: number;
     remainingBalance: number;
     currency: string;
+  };
+  payment: {
+    paymentReference: string;
+    status: string;
+    paidAt?: Date;
   };
   status: BookingStatus;
   createdAt: Date;
@@ -159,18 +174,87 @@ export interface Booking {
 export interface Payment {
   id: string;
   paymentReference: string;
-  user: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  user: string; // User ID
   paymentType: "booking" | "subscription" | "product" | "wallet_topup";
   status: PaymentStatus;
   paymentMethod: "card" | "bank_transfer" | "wallet";
   paymentGateway: "stripe" | "paystack";
   amount: number;
   currency: "NGN" | "GBP" | "USD";
+  metadata?: {
+    contactInfo?: {
+      name: string;
+      email: string;
+      phoneNumber?: string;
+    };
+    [key: string]: unknown;
+  };
+  gatewayCardId?: string;
+  gatewayCustomerId?: string;
+  gatewayPaymentId?: string;
   paidAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Payout {
+  id: string;
+  transactionId: string;
+  transactionReference: string;
+  payoutReference: string;
+  wallet: {
+    vendor: string; // Vendor ID
+    pendingBalance: number;
+    availableBalance: number;
+    totalLifetimeEarnings: number;
+    currency: "NGN" | "GBP" | "USD";
+    id: string;
+  };
+  amount: number;
+  currency: "NGN" | "GBP" | "USD";
+  status: PayoutStatus;
+  category: string;
+  payoutMethod: PayoutMethod;
+  paymentGateway: "stripe" | "paystack";
+  bankAccount: {
+    accountName: string;
+    accountNumber: string; // Masked
+    bankName: string;
+    sortCode?: string; // For UK banks
+    bankCode?: string; // For Nigerian banks
+  };
+  requestedAt: Date;
+  notes?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Subscription {
+  id: string;
+  userId: string;
+  stripeSubscriptionId?: string;
+  stripeCustomerId?: string;
+  planId: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  plan: {
+    id: string;
+    name: string;
+    description?: string;
+    price: number;
+    currency: "NGN" | "GBP" | "USD";
+  };
+  subscriptionType: SubscriptionType;
+  status: SubscriptionStatus;
+  amount: number;
+  currency: string; // API returns lowercase sometimes (e.g., "gbp")
+  currentPeriodStart: Date;
+  currentPeriodEnd: Date;
+  cancelAtPeriodEnd: boolean;
+  canceledAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

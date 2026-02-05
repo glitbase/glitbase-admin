@@ -13,10 +13,11 @@ import UsersPage from "@/pages/users/Users";
 import ProductsPage from "@/pages/Products";
 import ServicesPage from "@/pages/services/Services";
 import StoresPage from "@/pages/stores/Stores";
-import BookingsPage from "@/pages/Bookings";
+import BookingsPage from "@/pages/bookings/Bookings";
 import PaymentsPage from "@/pages/Payments";
+import PayoutsPage from "@/pages/Payouts";
+import SubscriptionsPage from "@/pages/Subscriptions";
 import {
-  SubscriptionsPage,
   CategoriesPage,
   ReportsPage,
   ReviewsPage,
@@ -43,6 +44,7 @@ const App = () => (
                 <Route path="/stores" element={<StoresPage />} />
                 <Route path="/bookings" element={<BookingsPage />} />
                 <Route path="/payments" element={<PaymentsPage />} />
+                <Route path="/payouts" element={<PayoutsPage />} />
                 <Route path="/subscriptions" element={<SubscriptionsPage />} />
                 <Route path="/categories" element={<CategoriesPage />} />
                 <Route path="/reports" element={<ReportsPage />} />

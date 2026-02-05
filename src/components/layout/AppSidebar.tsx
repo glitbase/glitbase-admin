@@ -7,6 +7,7 @@ import {
   Store,
   CalendarCheck,
   CreditCard,
+  Wallet,
   Crown,
   FolderTree,
   Flag,
@@ -54,6 +55,7 @@ const mainNavItems = [
 const managementItems = [
   { title: "Bookings", url: "/bookings", icon: CalendarCheck },
   { title: "Payments", url: "/payments", icon: CreditCard },
+  { title: "Payouts", url: "/payouts", icon: Wallet },
   { title: "Subscriptions", url: "/subscriptions", icon: Crown },
 ];
 
@@ -125,7 +127,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        <Collapsible defaultOpen={!isInGroup(managementItems)} className="group/collapsible">
+        <Collapsible defaultOpen={true} className="group/collapsible">
           <SidebarGroup>
             <CollapsibleTrigger asChild>
               <SidebarGroupLabel
@@ -146,7 +148,7 @@ export function AppSidebar() {
           </SidebarGroup>
         </Collapsible>
 
-        <Collapsible defaultOpen={!isInGroup(contentItems)} className="group/collapsible">
+        <Collapsible defaultOpen={true} className="group/collapsible">
           <SidebarGroup>
             <CollapsibleTrigger asChild>
               <SidebarGroupLabel

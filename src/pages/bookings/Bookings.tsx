@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Eye, CreditCard, Loader2 } from "lucide-react";
+import { Eye, Calendar, Loader2 } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -10,19 +10,18 @@ import {
   EmptyState,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { getPayments, type GetPaymentsParams } from "@/services/paymentsApi";
-import type { Payment } from "@/types/api";
+import { getBookings, type GetBookingsParams } from "@/services/bookingsApi";
+import type { Booking } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-export default function PaymentsPage() {
+export default function BookingsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
-  const [paymentGatewayFilter, setPaymentGatewayFilter] = useState<string>("all");
-  const [currencyFilter, setCurrencyFilter] = useState<string>("all");
+  const [serviceTypeFilter, setServiceTypeFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<string>("newest");
   const [page, setPage] = useState(1);
   const limit = 20;
   const { toast } = useToast();
@@ -43,11 +42,11 @@ export default function PaymentsPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, paymentMethodFilter, paymentGatewayFilter, currencyFilter]);
+  }, [statusFilter, serviceTypeFilter, sortBy]);
 
   // Build query params
-  const queryParams: GetPaymentsParams = useMemo(() => {
-    const params: GetPaymentsParams = {
+  const queryParams: GetBookingsParams = useMemo(() => {
+    const params: GetBookingsParams = {
       page,
       limit,
     };
@@ -57,49 +56,45 @@ export default function PaymentsPage() {
     }
 
     if (statusFilter !== "all") {
-      params.status = statusFilter as "pending" | "completed" | "failed" | "refunded";
+      params.status = statusFilter as "pending" | "confirmed" | "ongoing" | "completed" | "rejected" | "refunded" | "cancelled";
     }
 
-    if (paymentMethodFilter !== "all") {
-      params.paymentMethod = paymentMethodFilter as "card" | "bank_transfer" | "wallet";
+    if (serviceTypeFilter !== "all") {
+      params.serviceType = serviceTypeFilter as "normal" | "home" | "pickDrop";
     }
 
-    if (paymentGatewayFilter !== "all") {
-      params.paymentGateway = paymentGatewayFilter as "stripe" | "paystack";
-    }
-
-    if (currencyFilter !== "all") {
-      params.currency = currencyFilter as "NGN" | "GBP" | "USD";
+    if (sortBy !== "newest") {
+      params.sortBy = sortBy as "newest" | "oldest" | "customerName";
     }
 
     return params;
-  }, [debouncedSearch, statusFilter, paymentMethodFilter, paymentGatewayFilter, currencyFilter, page, limit]);
+  }, [debouncedSearch, statusFilter, serviceTypeFilter, sortBy, page, limit]);
 
-  // Fetch payments
+  // Fetch bookings
   const {
-    data: paymentsResponse,
+    data: bookingsResponse,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["payments", queryParams],
-    queryFn: () => getPayments(queryParams),
+    queryKey: ["bookings", queryParams],
+    queryFn: () => getBookings(queryParams),
     retry: 1,
   });
 
   // Parse dates from API response (dates come as strings from JSON)
-  const payments = useMemo(() => {
-    return (paymentsResponse?.data?.payments || []).map((payment) => ({
-      ...payment,
-      paidAt: payment.paidAt ? new Date(payment.paidAt) : undefined,
-      createdAt: new Date(payment.createdAt),
-      updatedAt: new Date(payment.updatedAt),
+  const bookings = useMemo(() => {
+    return (bookingsResponse?.data?.bookings || []).map((booking) => ({
+      ...booking,
+      serviceDate: new Date(booking.serviceDate),
+      createdAt: new Date(booking.createdAt),
+      updatedAt: new Date(booking.updatedAt),
     }));
-  }, [paymentsResponse?.data?.payments]);
+  }, [bookingsResponse?.data?.bookings]);
 
   // Handle pagination meta (API returns totalDocs instead of total)
   const paginationMeta = useMemo(() => {
-    const meta = paymentsResponse?.data?.meta;
+    const meta = bookingsResponse?.data?.meta;
     if (!meta) return undefined;
     
     // Handle inconsistent API response format
@@ -112,14 +107,14 @@ export default function PaymentsPage() {
       total: (rawMeta.totalDocs as number) || meta.total || 0,
       hasPrevPage: (rawMeta.hasPreviousPage as boolean) ?? meta.hasPrevPage,
     };
-  }, [paymentsResponse?.data?.meta]);
+  }, [bookingsResponse?.data?.meta]);
 
   // Handle errors
   useEffect(() => {
     if (isError) {
       toast({
-        title: "Error loading payments",
-        description: error instanceof Error ? error.message : "Failed to fetch payments",
+        title: "Error loading bookings",
+        description: error instanceof Error ? error.message : "Failed to fetch bookings",
         variant: "destructive",
       });
     }
@@ -127,26 +122,24 @@ export default function PaymentsPage() {
 
   const statusOptions = [
     { value: "pending", label: "Pending" },
+    { value: "confirmed", label: "Confirmed" },
+    { value: "ongoing", label: "Ongoing" },
     { value: "completed", label: "Completed" },
-    { value: "failed", label: "Failed" },
+    { value: "cancelled", label: "Cancelled" },
+    { value: "rejected", label: "Rejected" },
     { value: "refunded", label: "Refunded" },
   ];
 
-  const paymentMethodOptions = [
-    { value: "card", label: "Card" },
-    { value: "bank_transfer", label: "Bank Transfer" },
-    { value: "wallet", label: "Wallet" },
+  const serviceTypeOptions = [
+    { value: "normal", label: "Normal" },
+    { value: "home", label: "Home" },
+    { value: "pickDrop", label: "Pick & Drop" },
   ];
 
-  const paymentGatewayOptions = [
-    { value: "stripe", label: "Stripe" },
-    { value: "paystack", label: "Paystack" },
-  ];
-
-  const currencyOptions = [
-    { value: "GBP", label: "GBP" },
-    { value: "USD", label: "USD" },
-    { value: "NGN", label: "NGN" },
+  const sortOptions = [
+    { value: "newest", label: "Newest First" },
+    { value: "oldest", label: "Oldest First" },
+    { value: "customerName", label: "Customer Name" },
   ];
 
   const formatPrice = (price: number, currency: string) => {
@@ -175,15 +168,15 @@ export default function PaymentsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Payments"
-        description="View and manage all platform payments"
+        title="Bookings"
+        description="Manage customer service bookings"
       />
 
       <div className="filter-bar">
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search payments..."
+          placeholder="Search bookings..."
         />
         <FilterSelect
           value={statusFilter}
@@ -193,25 +186,18 @@ export default function PaymentsPage() {
           allLabel="All Statuses"
         />
         <FilterSelect
-          value={paymentMethodFilter}
-          onChange={setPaymentMethodFilter}
-          placeholder="Payment Method"
-          options={paymentMethodOptions}
-          allLabel="All Methods"
+          value={serviceTypeFilter}
+          onChange={setServiceTypeFilter}
+          placeholder="Service Type"
+          options={serviceTypeOptions}
+          allLabel="All Service Types"
         />
         <FilterSelect
-          value={paymentGatewayFilter}
-          onChange={setPaymentGatewayFilter}
-          placeholder="Gateway"
-          options={paymentGatewayOptions}
-          allLabel="All Gateways"
-        />
-        <FilterSelect
-          value={currencyFilter}
-          onChange={setCurrencyFilter}
-          placeholder="Currency"
-          options={currencyOptions}
-          allLabel="All Currencies"
+          value={sortBy}
+          onChange={setSortBy}
+          placeholder="Sort By"
+          options={sortOptions}
+          showAll={false}
         />
       </div>
 
@@ -219,18 +205,16 @@ export default function PaymentsPage() {
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : payments.length === 0 ? (
-        <div className="card">
-          <EmptyState
-            icon={<CreditCard className="h-12 w-12" />}
-            title="No payments found"
-            description={
-              search || statusFilter !== "all" || paymentMethodFilter !== "all" || paymentGatewayFilter !== "all" || currencyFilter !== "all"
-                ? "Try adjusting your search or filters"
-                : "Payments will appear here once transactions are processed"
-            }
-          />
-        </div>
+      ) : bookings.length === 0 ? (
+        <EmptyState
+          icon={<Calendar className="h-12 w-12" />}
+          title="No bookings found"
+          description={
+            search || statusFilter !== "all"
+              ? "Try adjusting your search or filters"
+              : "Bookings will appear here once customers make appointments"
+          }
+        />
       ) : (
         <div className="card">
           <div className="overflow-x-auto">
@@ -238,81 +222,73 @@ export default function PaymentsPage() {
               <thead>
                 <tr>
                   <th>Reference</th>
-                  <th>User</th>
-                  <th>Type</th>
-                  <th>Method</th>
+                  <th>Customer</th>
+                  <th>Store</th>
+                  <th>Service Type</th>
+                  <th>Service Date</th>
                   <th>Amount</th>
                   <th>Status</th>
-                  <th>Date</th>
                   <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {payments.map((payment) => (
-                  <tr key={payment.id}>
+                {bookings.map((booking) => (
+                  <tr key={booking.id}>
                     <td>
-                      <span className="font-mono text-foreground text-sm">
-                        {payment.paymentReference}
-                      </span>
+                      <p className="font-medium text-foreground">
+                        {booking.bookingReference}
+                      </p>
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(payment.metadata?.contactInfo?.name || "??")}
+                            {getInitials(booking.contactInfo.name)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium text-foreground capitalize">
-                            {payment.metadata?.contactInfo?.name || "Unknown"}
+                            {booking.contactInfo.name}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {payment.metadata?.contactInfo?.email || "—"}
+                            {booking.contactInfo.email}
                           </p>
                         </div>
                       </div>
                     </td>
-                    <td className="text-muted-foreground capitalize">
-                      {payment.paymentType.replace(/_/g, " ")}
-                    </td>
-                    <td>
-                      <div className="flex flex-col gap-0.5">
-                        <span className="capitalize text-foreground text-sm">
-                          {payment.paymentMethod.replace(/_/g, " ")}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          via {payment.paymentGateway}
-                        </span>
-                      </div>
-                    </td>
                     <td>
                       <p className="font-medium text-foreground">
-                        {formatPrice(payment.amount, payment.currency)}
+                        {booking.store.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {booking.store.location?.city || "—"}
+                      </p>
+                    </td>
+                    <td className="text-muted-foreground capitalize">
+                      {booking.serviceType}
+                    </td>
+                    <td>
+                      <p className="text-foreground">{formatDate(booking.serviceDate)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {booking.serviceTime}
                       </p>
                     </td>
                     <td>
-                      <StatusBadge status={payment.status} />
+                      <p className="font-medium text-foreground">
+                        {formatPrice(booking.pricing.subtotal, booking.pricing.currency)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Paid: {formatPrice(booking.pricing.amountPaid, booking.pricing.currency)}
+                      </p>
                     </td>
                     <td>
-                      {payment.paidAt ? (
-                        <>
-                          <p className="text-foreground">{formatDate(payment.paidAt)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(payment.paidAt).toLocaleTimeString("en-GB", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <StatusBadge status={booking.status} />
                     </td>
                     <td className="text-center">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/payments/${payment.id}`)}
+                        onClick={() => navigate(`/bookings/${booking.id}`)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -328,7 +304,7 @@ export default function PaymentsPage() {
               <div className="text-sm text-muted-foreground">
                 Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
                 {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} payments
+                {paginationMeta.total} bookings
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -358,3 +334,4 @@ export default function PaymentsPage() {
     </div>
   );
 }
+

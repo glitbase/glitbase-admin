@@ -25,15 +25,6 @@ export function PlaceholderPage({ title, description }: PlaceholderPageProps) {
   );
 }
 
-export function SubscriptionsPage() {
-  return (
-    <PlaceholderPage
-      title="Subscriptions"
-      description="Manage subscription plans and vendor subscriptions"
-    />
-  );
-}
-
 export function CategoriesPage() {
   return (
     <PlaceholderPage

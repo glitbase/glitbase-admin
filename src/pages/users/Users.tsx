@@ -227,6 +227,7 @@ export default function UsersPage() {
           onChange={setRoleFilter}
           placeholder="Role"
           options={roleOptions}
+          allLabel="All Roles"
         />
       </div>
 

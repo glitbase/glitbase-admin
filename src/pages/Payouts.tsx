@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Eye, CreditCard, Loader2 } from "lucide-react";
+import { Eye, Wallet, Loader2 } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -10,18 +10,17 @@ import {
   EmptyState,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { getPayments, type GetPaymentsParams } from "@/services/paymentsApi";
-import type { Payment } from "@/types/api";
+import { getPayouts, type GetPayoutsParams } from "@/services/payoutsApi";
+import type { Payout } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export default function PaymentsPage() {
+export default function PayoutsPage() {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
-  const [paymentGatewayFilter, setPaymentGatewayFilter] = useState<string>("all");
+  const [payoutMethodFilter, setPayoutMethodFilter] = useState<string>("all");
   const [currencyFilter, setCurrencyFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const limit = 20;
@@ -43,11 +42,11 @@ export default function PaymentsPage() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [statusFilter, paymentMethodFilter, paymentGatewayFilter, currencyFilter]);
+  }, [statusFilter, payoutMethodFilter, currencyFilter]);
 
   // Build query params
-  const queryParams: GetPaymentsParams = useMemo(() => {
-    const params: GetPaymentsParams = {
+  const queryParams: GetPayoutsParams = useMemo(() => {
+    const params: GetPayoutsParams = {
       page,
       limit,
     };
@@ -57,15 +56,11 @@ export default function PaymentsPage() {
     }
 
     if (statusFilter !== "all") {
-      params.status = statusFilter as "pending" | "completed" | "failed" | "refunded";
+      params.status = statusFilter as "pending_approval" | "approved" | "processing" | "completed" | "failed" | "cancelled";
     }
 
-    if (paymentMethodFilter !== "all") {
-      params.paymentMethod = paymentMethodFilter as "card" | "bank_transfer" | "wallet";
-    }
-
-    if (paymentGatewayFilter !== "all") {
-      params.paymentGateway = paymentGatewayFilter as "stripe" | "paystack";
+    if (payoutMethodFilter !== "all") {
+      params.payoutMethod = payoutMethodFilter as "bank_transfer" | "mobile_money" | "paypal" | "stripe_connect";
     }
 
     if (currencyFilter !== "all") {
@@ -73,33 +68,33 @@ export default function PaymentsPage() {
     }
 
     return params;
-  }, [debouncedSearch, statusFilter, paymentMethodFilter, paymentGatewayFilter, currencyFilter, page, limit]);
+  }, [debouncedSearch, statusFilter, payoutMethodFilter, currencyFilter, page, limit]);
 
-  // Fetch payments
+  // Fetch payouts
   const {
-    data: paymentsResponse,
+    data: payoutsResponse,
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["payments", queryParams],
-    queryFn: () => getPayments(queryParams),
+    queryKey: ["payouts", queryParams],
+    queryFn: () => getPayouts(queryParams),
     retry: 1,
   });
 
   // Parse dates from API response (dates come as strings from JSON)
-  const payments = useMemo(() => {
-    return (paymentsResponse?.data?.payments || []).map((payment) => ({
-      ...payment,
-      paidAt: payment.paidAt ? new Date(payment.paidAt) : undefined,
-      createdAt: new Date(payment.createdAt),
-      updatedAt: new Date(payment.updatedAt),
+  const payouts = useMemo(() => {
+    return (payoutsResponse?.data?.payouts || []).map((payout) => ({
+      ...payout,
+      requestedAt: new Date(payout.requestedAt),
+      createdAt: new Date(payout.createdAt),
+      updatedAt: new Date(payout.updatedAt),
     }));
-  }, [paymentsResponse?.data?.payments]);
+  }, [payoutsResponse?.data?.payouts]);
 
   // Handle pagination meta (API returns totalDocs instead of total)
   const paginationMeta = useMemo(() => {
-    const meta = paymentsResponse?.data?.meta;
+    const meta = payoutsResponse?.data?.meta;
     if (!meta) return undefined;
     
     // Handle inconsistent API response format
@@ -112,35 +107,33 @@ export default function PaymentsPage() {
       total: (rawMeta.totalDocs as number) || meta.total || 0,
       hasPrevPage: (rawMeta.hasPreviousPage as boolean) ?? meta.hasPrevPage,
     };
-  }, [paymentsResponse?.data?.meta]);
+  }, [payoutsResponse?.data?.meta]);
 
   // Handle errors
   useEffect(() => {
     if (isError) {
       toast({
-        title: "Error loading payments",
-        description: error instanceof Error ? error.message : "Failed to fetch payments",
+        title: "Error loading payouts",
+        description: error instanceof Error ? error.message : "Failed to fetch payouts",
         variant: "destructive",
       });
     }
   }, [isError, error, toast]);
 
   const statusOptions = [
-    { value: "pending", label: "Pending" },
+    { value: "pending_approval", label: "Pending Approval" },
+    { value: "approved", label: "Approved" },
+    { value: "processing", label: "Processing" },
     { value: "completed", label: "Completed" },
     { value: "failed", label: "Failed" },
-    { value: "refunded", label: "Refunded" },
+    { value: "cancelled", label: "Cancelled" },
   ];
 
-  const paymentMethodOptions = [
-    { value: "card", label: "Card" },
+  const payoutMethodOptions = [
     { value: "bank_transfer", label: "Bank Transfer" },
-    { value: "wallet", label: "Wallet" },
-  ];
-
-  const paymentGatewayOptions = [
-    { value: "stripe", label: "Stripe" },
-    { value: "paystack", label: "Paystack" },
+    { value: "mobile_money", label: "Mobile Money" },
+    { value: "paypal", label: "PayPal" },
+    { value: "stripe_connect", label: "Stripe Connect" },
   ];
 
   const currencyOptions = [
@@ -175,15 +168,15 @@ export default function PaymentsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Payments"
-        description="View and manage all platform payments"
+        title="Payouts"
+        description="Manage vendor payouts and transactions"
       />
 
       <div className="filter-bar">
         <SearchInput
           value={search}
           onChange={setSearch}
-          placeholder="Search payments..."
+          placeholder="Search payouts..."
         />
         <FilterSelect
           value={statusFilter}
@@ -193,18 +186,11 @@ export default function PaymentsPage() {
           allLabel="All Statuses"
         />
         <FilterSelect
-          value={paymentMethodFilter}
-          onChange={setPaymentMethodFilter}
-          placeholder="Payment Method"
-          options={paymentMethodOptions}
+          value={payoutMethodFilter}
+          onChange={setPayoutMethodFilter}
+          placeholder="Payout Method"
+          options={payoutMethodOptions}
           allLabel="All Methods"
-        />
-        <FilterSelect
-          value={paymentGatewayFilter}
-          onChange={setPaymentGatewayFilter}
-          placeholder="Gateway"
-          options={paymentGatewayOptions}
-          allLabel="All Gateways"
         />
         <FilterSelect
           value={currencyFilter}
@@ -219,15 +205,15 @@ export default function PaymentsPage() {
         <div className="flex items-center justify-center h-64">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      ) : payments.length === 0 ? (
+      ) : payouts.length === 0 ? (
         <div className="card">
           <EmptyState
-            icon={<CreditCard className="h-12 w-12" />}
-            title="No payments found"
+            icon={<Wallet className="h-12 w-12" />}
+            title="No payouts found"
             description={
-              search || statusFilter !== "all" || paymentMethodFilter !== "all" || paymentGatewayFilter !== "all" || currencyFilter !== "all"
+              search || statusFilter !== "all" || payoutMethodFilter !== "all" || currencyFilter !== "all"
                 ? "Try adjusting your search or filters"
-                : "Payments will appear here once transactions are processed"
+                : "Payouts will appear here once vendors request withdrawals"
             }
           />
         </div>
@@ -238,81 +224,75 @@ export default function PaymentsPage() {
               <thead>
                 <tr>
                   <th>Reference</th>
-                  <th>User</th>
-                  <th>Type</th>
-                  <th>Method</th>
+                  <th>Vendor</th>
                   <th>Amount</th>
+                  <th>Method</th>
+                  <th>Account</th>
                   <th>Status</th>
                   <th>Date</th>
                   <th className="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {payments.map((payment) => (
-                  <tr key={payment.id}>
+                {payouts.map((payout) => (
+                  <tr key={payout.id}>
                     <td>
                       <span className="font-mono text-foreground text-sm">
-                        {payment.paymentReference}
+                        {payout.payoutReference}
                       </span>
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
                           <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(payment.metadata?.contactInfo?.name || "??")}
+                            {getInitials(payout.bankAccount.accountName)}
                           </AvatarFallback>
                         </Avatar>
                         <div>
                           <p className="font-medium text-foreground capitalize">
-                            {payment.metadata?.contactInfo?.name || "Unknown"}
+                            {payout.bankAccount.accountName}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {payment.metadata?.contactInfo?.email || "—"}
+                            Vendor ID: {payout.wallet.vendor.slice(0, 8)}...
                           </p>
                         </div>
                       </div>
                     </td>
+                    <td>
+                      <p className="font-medium text-foreground">
+                        {formatPrice(payout.amount, payout.currency)}
+                      </p>
+                    </td>
                     <td className="text-muted-foreground capitalize">
-                      {payment.paymentType.replace(/_/g, " ")}
+                      {payout.payoutMethod.replace(/_/g, " ")}
                     </td>
                     <td>
                       <div className="flex flex-col gap-0.5">
-                        <span className="capitalize text-foreground text-sm">
-                          {payment.paymentMethod.replace(/_/g, " ")}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          via {payment.paymentGateway}
-                        </span>
+                        <p className="text-sm text-foreground">
+                          {payout.bankAccount.accountName}
+                        </p>
+                        <p className="text-xs text-muted-foreground font-mono">
+                          {payout.bankAccount.accountNumber}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {payout.bankAccount.bankName}
+                        </p>
                       </div>
                     </td>
                     <td>
-                      <p className="font-medium text-foreground">
-                        {formatPrice(payment.amount, payment.currency)}
+                      <StatusBadge status={payout.status} />
+                    </td>
+                    <td>
+                      <p className="text-foreground">{formatDate(payout.requestedAt)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Requested
                       </p>
-                    </td>
-                    <td>
-                      <StatusBadge status={payment.status} />
-                    </td>
-                    <td>
-                      {payment.paidAt ? (
-                        <>
-                          <p className="text-foreground">{formatDate(payment.paidAt)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(payment.paidAt).toLocaleTimeString("en-GB", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                        </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
                     </td>
                     <td className="text-center">
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/payments/${payment.id}`)}
+                        onClick={() => navigate(`/payouts/${payout.id}`)}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -328,7 +308,7 @@ export default function PaymentsPage() {
               <div className="text-sm text-muted-foreground">
                 Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
                 {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} payments
+                {paginationMeta.total} payouts
               </div>
               <div className="flex items-center gap-2">
                 <Button
@@ -358,3 +338,4 @@ export default function PaymentsPage() {
     </div>
   );
 }
+

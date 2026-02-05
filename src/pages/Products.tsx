@@ -77,6 +77,7 @@ export default function ProductsPage() {
           onChange={setStatusFilter}
           placeholder="Status"
           options={statusOptions}
+          allLabel="All Statuses"
         />
       </div>
 

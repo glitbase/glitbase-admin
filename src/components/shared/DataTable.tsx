@@ -67,6 +67,8 @@ interface FilterSelectProps {
   onChange: (value: string) => void;
   placeholder: string;
   options: { value: string; label: string }[];
+  showAll?: boolean; // Optionally hide "All" option
+  allLabel?: string; // Custom label for "All" option (default: "All")
 }
 
 export function FilterSelect({
@@ -74,6 +76,8 @@ export function FilterSelect({
   onChange,
   placeholder,
   options,
+  showAll = true,
+  allLabel = "All",
 }: FilterSelectProps) {
   return (
     <Select value={value} onValueChange={onChange}>
@@ -81,7 +85,7 @@ export function FilterSelect({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All</SelectItem>
+        {showAll && <SelectItem value="all">{allLabel}</SelectItem>}
         {options.map((option) => (
           <SelectItem key={option.value} value={option.value}>
             {option.label}
@@ -107,18 +111,28 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       case "active":
       case "confirmed":
       case "available":
+      case "trialing":
         return "approved";
       case "pending":
+      case "pending_approval":
       case "reviewing":
       case "in_progress":
       case "busy":
+      case "processing":
+      case "past_due":
+      case "incomplete":
         return "pending";
+      case "refunded":
+        return "refunded";
       case "rejected":
       case "failed":
       case "cancelled":
+      case "canceled":
       case "inactive":
       case "unavailable":
       case "offline":
+      case "incomplete_expired":
+      case "unpaid":
         return "rejected";
       default:
         return "";
