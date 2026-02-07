@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Eye, Store, Package, Briefcase, Image as ImageIcon } from "lucide-react";
+import { MoreHorizontal, Store, Package, Briefcase, Image as ImageIcon, Plus, X, Edit, Trash2 } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -10,10 +10,35 @@ import {
   TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { getMarketplaceCategories, type GetMarketplaceCategoriesParams } from "@/services/marketplaceCategoriesApi";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { getMarketplaceCategories, createMarketplaceCategory, updateMarketplaceCategory, deleteMarketplaceCategory, type GetMarketplaceCategoriesParams, type CreateMarketplaceCategoryPayload, type UpdateMarketplaceCategoryPayload } from "@/services/marketplaceCategoriesApi";
 import type { MarketplaceCategory } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -22,12 +47,35 @@ import {
 
 export default function MarketplaceCategoriesPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
   const limit = 20;
   const { toast } = useToast();
+  
+  // Create dialog state
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [formData, setFormData] = useState<CreateMarketplaceCategoryPayload>({
+    name: "",
+    type: "product",
+    subcategories: [],
+    description: "",
+    imageUrl: "",
+    icon: "",
+  });
+  const [subcategoryInput, setSubcategoryInput] = useState("");
+  
+  // Edit dialog state
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<MarketplaceCategory | null>(null);
+  const [editFormData, setEditFormData] = useState<UpdateMarketplaceCategoryPayload>({});
+  const [editSubcategoryInput, setEditSubcategoryInput] = useState("");
+  
+  // Delete dialog state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState<MarketplaceCategory | null>(null);
 
   // Debounce search input
   useEffect(() => {
@@ -156,6 +204,248 @@ export default function MarketplaceCategoriesPage() {
     }
   }, [isError, error, toast]);
 
+  // Create category mutation
+  const createMutation = useMutation({
+    mutationFn: createMarketplaceCategory,
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Category created successfully",
+        variant: "success",
+      });
+      setIsCreateDialogOpen(false);
+      // Reset form
+      setFormData({
+        name: "",
+        type: "product",
+        subcategories: [],
+        description: "",
+        imageUrl: "",
+        icon: "",
+      });
+      setSubcategoryInput("");
+      // Invalidate and refetch categories
+      queryClient.invalidateQueries({ queryKey: ["marketplace-categories"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error creating category",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Update category mutation
+  const updateMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: UpdateMarketplaceCategoryPayload }) =>
+      updateMarketplaceCategory(id, payload),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Category updated successfully",
+        variant: "success",
+      });
+      setIsEditDialogOpen(false);
+      setEditingCategory(null);
+      setEditFormData({});
+      setEditSubcategoryInput("");
+      // Invalidate and refetch categories
+      queryClient.invalidateQueries({ queryKey: ["marketplace-categories"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error updating category",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete category mutation
+  const deleteMutation = useMutation({
+    mutationFn: deleteMarketplaceCategory,
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Category deleted successfully",
+        variant: "success",
+      });
+      setIsDeleteDialogOpen(false);
+      setDeletingCategory(null);
+      // Invalidate and refetch categories
+      queryClient.invalidateQueries({ queryKey: ["marketplace-categories"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error deleting category",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Add subcategory from input
+  const addSubcategory = () => {
+    const trimmed = subcategoryInput.trim();
+    if (trimmed && !formData.subcategories.includes(trimmed)) {
+      setFormData({
+        ...formData,
+        subcategories: [...formData.subcategories, trimmed],
+      });
+      setSubcategoryInput("");
+    }
+  };
+
+  // Remove subcategory
+  const removeSubcategory = (index: number) => {
+    const newSubcategories = formData.subcategories.filter((_, i) => i !== index);
+    setFormData({ ...formData, subcategories: newSubcategories });
+  };
+
+  // Handle Enter key in subcategory input
+  const handleSubcategoryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addSubcategory();
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = () => {
+    // Validate required fields
+    if (!formData.name.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Category name is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate subcategories
+    if (formData.subcategories.length === 0) {
+      toast({
+        title: "Validation Error",
+        description: "At least one subcategory is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepare payload (only include optional fields if they have values)
+    const payload: CreateMarketplaceCategoryPayload = {
+      name: formData.name.trim(),
+      type: formData.type,
+      subcategories: formData.subcategories,
+    };
+
+    if (formData.description?.trim()) {
+      payload.description = formData.description.trim();
+    }
+    if (formData.imageUrl?.trim()) {
+      payload.imageUrl = formData.imageUrl.trim();
+    }
+    if (formData.icon?.trim()) {
+      payload.icon = formData.icon.trim();
+    }
+
+    createMutation.mutate(payload);
+  };
+
+  // Handle edit form submission
+  const handleEditSubmit = () => {
+    if (!editingCategory) return;
+
+    // Build payload with only changed fields
+    const payload: UpdateMarketplaceCategoryPayload = {};
+    
+    if (editFormData.name !== undefined && editFormData.name.trim() !== editingCategory.name) {
+      payload.name = editFormData.name.trim();
+    }
+    if (editFormData.type !== undefined && editFormData.type !== editingCategory.type) {
+      payload.type = editFormData.type;
+    }
+    if (editFormData.subcategories !== undefined && 
+        JSON.stringify(editFormData.subcategories) !== JSON.stringify(editingCategory.subcategories)) {
+      payload.subcategories = editFormData.subcategories;
+    }
+    if (editFormData.description !== undefined && editFormData.description.trim() !== (editingCategory.description || "")) {
+      payload.description = editFormData.description.trim();
+    }
+    if (editFormData.imageUrl !== undefined && editFormData.imageUrl.trim() !== (editingCategory.imageUrl || "")) {
+      payload.imageUrl = editFormData.imageUrl.trim();
+    }
+    if (editFormData.icon !== undefined && editFormData.icon.trim() !== (editingCategory.icon || "")) {
+      payload.icon = editFormData.icon.trim();
+    }
+
+    // Check if there are any changes
+    if (Object.keys(payload).length === 0) {
+      toast({
+        title: "No Changes",
+        description: "No changes were made to the category",
+      });
+      return;
+    }
+
+    updateMutation.mutate({ id: editingCategory.id, payload });
+  };
+
+  // Open edit dialog with category data
+  const handleEdit = (category: MarketplaceCategory) => {
+    setEditingCategory(category);
+    setEditFormData({
+      name: category.name,
+      type: category.type,
+      subcategories: [...category.subcategories],
+      description: category.description || "",
+      imageUrl: category.imageUrl || "",
+      icon: category.icon || "",
+    });
+    setEditSubcategoryInput("");
+    setIsEditDialogOpen(true);
+  };
+
+  // Open delete confirmation dialog
+  const handleDeleteClick = (category: MarketplaceCategory) => {
+    setDeletingCategory(category);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Confirm delete
+  const handleDeleteConfirm = () => {
+    if (deletingCategory) {
+      deleteMutation.mutate(deletingCategory.id);
+    }
+  };
+
+  // Edit subcategory handlers
+  const addEditSubcategory = () => {
+    const trimmed = editSubcategoryInput.trim();
+    const currentSubcategories = editFormData.subcategories || [];
+    if (trimmed && !currentSubcategories.includes(trimmed)) {
+      setEditFormData({
+        ...editFormData,
+        subcategories: [...currentSubcategories, trimmed],
+      });
+      setEditSubcategoryInput("");
+    }
+  };
+
+  const removeEditSubcategory = (index: number) => {
+    const currentSubcategories = editFormData.subcategories || [];
+    const newSubcategories = currentSubcategories.filter((_, i) => i !== index);
+    setEditFormData({ ...editFormData, subcategories: newSubcategories });
+  };
+
+  const handleEditSubcategoryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addEditSubcategory();
+    }
+  };
+
   const typeOptions = [
     { value: "product", label: "Product" },
     { value: "service", label: "Service" },
@@ -189,6 +479,10 @@ export default function MarketplaceCategoriesPage() {
           options={typeOptions}
           allLabel="All Types"
         />
+        <Button onClick={() => setIsCreateDialogOpen(true)} className="ml-auto">
+          <Plus className="h-4 w-4 mr-2" />
+          Create Category
+        </Button>
       </div>
 
       {isLoading ? (
@@ -289,13 +583,26 @@ export default function MarketplaceCategoriesPage() {
                       <p className="text-sm text-foreground">{formatDate(category.createdAt)}</p>
                     </td>
                     <td className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/categories/marketplace/${category.id}`)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteClick(category)}
+                            className="text-destructive focus:text-destructive cursor-pointer"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))}
@@ -335,6 +642,322 @@ export default function MarketplaceCategoriesPage() {
           )}
         </div>
       )}
+
+      {/* Create Category Dialog */}
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Create Marketplace Category</DialogTitle>
+            <DialogDescription>
+              Add a new category for marketplace products or services
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor="name">
+                Category Name <span className="text-destructive">*</span>
+              </Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="e.g., Beauty & Wellness"
+              />
+            </div>
+
+            {/* Type */}
+            <div className="space-y-2">
+              <Label htmlFor="type">
+                Type <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={formData.type}
+                onValueChange={(value: "product" | "service") =>
+                  setFormData({ ...formData, type: value })
+                }
+              >
+                <SelectTrigger id="type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="service">Service</SelectItem>
+                  <SelectItem value="product">Product</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Subcategories */}
+            <div className="space-y-2">
+              <Label>
+                Subcategories <span className="text-destructive">*</span>
+              </Label>
+              <div className="space-y-2">
+                {/* Input for adding new subcategory */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={subcategoryInput}
+                    onChange={(e) => setSubcategoryInput(e.target.value)}
+                    onKeyDown={handleSubcategoryKeyDown}
+                    placeholder="Type subcategory and press Enter"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addSubcategory}
+                    disabled={!subcategoryInput.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {/* Display chips for added subcategories */}
+                {formData.subcategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {formData.subcategories.map((subcategory, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex items-center gap-1.5 pr-1 bg-gray-200 dark:bg-gray-700 text-foreground"
+                      >
+                        {subcategory}
+                        <button
+                          type="button"
+                          onClick={() => removeSubcategory(index)}
+                          className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                At least one subcategory is required
+              </p>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description</Label>
+              <Textarea
+                id="description"
+                value={formData.description}
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                placeholder="Category description (optional)"
+                rows={3}
+              />
+            </div>
+
+            {/* Image URL */}
+            <div className="space-y-2">
+              <Label htmlFor="imageUrl">Image URL</Label>
+              <Input
+                id="imageUrl"
+                type="url"
+                value={formData.imageUrl}
+                onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            {/* Icon */}
+            <div className="space-y-2">
+              <Label htmlFor="icon">Icon URL</Label>
+              <Input
+                id="icon"
+                type="url"
+                value={formData.icon}
+                onChange={(e) => setFormData({ ...formData, icon: e.target.value })}
+                placeholder="https://example.com/icon.png or icon identifier"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateDialogOpen(false)}
+              disabled={createMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={createMutation.isPending}>
+              {createMutation.isPending ? "Creating..." : "Create Category"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Category Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Marketplace Category</DialogTitle>
+            <DialogDescription>
+              Update category information
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Name */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Category Name</Label>
+              <Input
+                id="edit-name"
+                value={editFormData.name || ""}
+                onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                placeholder="e.g., Beauty & Wellness"
+              />
+            </div>
+
+            {/* Type */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-type">Type</Label>
+              <Select
+                value={editFormData.type || "product"}
+                onValueChange={(value: "product" | "service") =>
+                  setEditFormData({ ...editFormData, type: value })
+                }
+              >
+                <SelectTrigger id="edit-type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="service">Service</SelectItem>
+                  <SelectItem value="product">Product</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Subcategories */}
+            <div className="space-y-2">
+              <Label>Subcategories</Label>
+              <div className="space-y-2">
+                {/* Input for adding new subcategory */}
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editSubcategoryInput}
+                    onChange={(e) => setEditSubcategoryInput(e.target.value)}
+                    onKeyDown={handleEditSubcategoryKeyDown}
+                    placeholder="Type subcategory and press Enter"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addEditSubcategory}
+                    disabled={!editSubcategoryInput.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {/* Display chips for added subcategories */}
+                {(editFormData.subcategories && editFormData.subcategories.length > 0) && (
+                  <div className="flex flex-wrap gap-2">
+                    {editFormData.subcategories.map((subcategory, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex items-center gap-1.5 pr-1 bg-gray-200 dark:bg-gray-700 text-foreground"
+                      >
+                        {subcategory}
+                        <button
+                          type="button"
+                          onClick={() => removeEditSubcategory(index)}
+                          className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Description</Label>
+              <Textarea
+                id="edit-description"
+                value={editFormData.description || ""}
+                onChange={(e) => setEditFormData({ ...editFormData, description: e.target.value })}
+                placeholder="Category description (optional)"
+                rows={3}
+              />
+            </div>
+
+            {/* Image URL */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-imageUrl">Image URL</Label>
+              <Input
+                id="edit-imageUrl"
+                type="url"
+                value={editFormData.imageUrl || ""}
+                onChange={(e) => setEditFormData({ ...editFormData, imageUrl: e.target.value })}
+                placeholder="https://example.com/image.jpg"
+              />
+            </div>
+
+            {/* Icon */}
+            <div className="space-y-2">
+              <Label htmlFor="edit-icon">Icon URL</Label>
+              <Input
+                id="edit-icon"
+                type="url"
+                value={editFormData.icon || ""}
+                onChange={(e) => setEditFormData({ ...editFormData, icon: e.target.value })}
+                placeholder="https://example.com/icon.png or icon identifier"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+              disabled={updateMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEditSubmit} disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? "Updating..." : "Update Category"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Category</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the category "{deletingCategory?.name}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -36,3 +36,78 @@ export async function getSubscriptionPlans(
   });
 }
 
+export interface CreateSubscriptionPlanPayload {
+  name: string;
+  type: "monthly" | "yearly";
+  price: number;
+  currency: string;
+  description?: string;
+  durationInMonths: number;
+  isActive: boolean;
+  stripePriceId: string;
+}
+
+export interface CreateSubscriptionPlanResponse {
+  id: string;
+  name: string;
+  type: "monthly" | "yearly";
+  price: number;
+  currency: string;
+  description?: string;
+  durationInMonths: number;
+  isActive: boolean;
+  stripePriceId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Create a new subscription plan
+ */
+export async function createSubscriptionPlan(
+  payload: CreateSubscriptionPlanPayload
+): Promise<IApiResponse<CreateSubscriptionPlanResponse>> {
+  return api.post<CreateSubscriptionPlanResponse>("/subscription-plans", payload);
+}
+
+export interface UpdateSubscriptionPlanPayload {
+  name?: string;
+  price?: number;
+  description?: string;
+  isActive?: boolean;
+  stripePriceId?: string;
+}
+
+export interface UpdateSubscriptionPlanResponse {
+  id: string;
+  name: string;
+  type: "monthly" | "yearly";
+  price: number;
+  currency: string;
+  description?: string;
+  durationInMonths: number;
+  isActive: boolean;
+  stripePriceId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Update a subscription plan
+ */
+export async function updateSubscriptionPlan(
+  id: string,
+  payload: UpdateSubscriptionPlanPayload
+): Promise<IApiResponse<UpdateSubscriptionPlanResponse>> {
+  return api.patch<UpdateSubscriptionPlanResponse>(`/subscription-plans/${id}`, payload);
+}
+
+/**
+ * Delete a subscription plan
+ */
+export async function deleteSubscriptionPlan(
+  id: string
+): Promise<IApiResponse<Record<string, never>>> {
+  return api.delete<Record<string, never>>(`/subscription-plans/${id}`);
+}
+

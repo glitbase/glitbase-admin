@@ -44,3 +44,38 @@ export async function getGlits(
   });
 }
 
+/**
+ * Get a single glit by ID
+ */
+export async function getGlitById(
+  id: string
+): Promise<IApiResponse<{ glit: Glit }>> {
+  return api.get<{ glit: Glit }>(`/glits/${id}`);
+}
+
+/**
+ * Get user glits (Admin)
+ */
+export async function getUserGlits(
+  userId: string,
+  params?: { page?: number | string; limit?: number | string }
+): Promise<IApiResponse<GetGlitsResponse>> {
+  const queryParams: Record<string, string | undefined> = {};
+  
+  if (params?.page !== undefined) queryParams.page = String(params.page);
+  if (params?.limit !== undefined) queryParams.limit = String(params.limit);
+  
+  return api.get<GetGlitsResponse>(`/glits/admin/user/${userId}`, {
+    params: queryParams,
+  });
+}
+
+/**
+ * Delete a glit (Admin)
+ */
+export async function deleteGlit(
+  id: string
+): Promise<IApiResponse<Record<string, never>>> {
+  return api.delete<Record<string, never>>(`/glits/admin/${id}`);
+}
+

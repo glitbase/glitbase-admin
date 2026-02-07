@@ -36,3 +36,51 @@ export async function getInspirationCategories(
   });
 }
 
+export interface CreateInspirationCategoryPayload {
+  title: string;
+  emoji: string;
+  type: "stylesInspo" | "touchupsTransformations";
+}
+
+export interface CreateInspirationCategoryResponse {
+  category: InspirationCategory;
+}
+
+/**
+ * Create a new inspiration category
+ */
+export async function createInspirationCategory(
+  payload: CreateInspirationCategoryPayload
+): Promise<IApiResponse<CreateInspirationCategoryResponse>> {
+  return api.post<CreateInspirationCategoryResponse>("/inspiration-categories/admin", payload);
+}
+
+export interface UpdateInspirationCategoryPayload {
+  title?: string;
+  emoji?: string;
+  type?: "stylesInspo" | "touchupsTransformations";
+}
+
+export interface UpdateInspirationCategoryResponse {
+  category: InspirationCategory;
+}
+
+/**
+ * Update an inspiration category
+ */
+export async function updateInspirationCategory(
+  id: string,
+  payload: UpdateInspirationCategoryPayload
+): Promise<IApiResponse<UpdateInspirationCategoryResponse>> {
+  return api.put<UpdateInspirationCategoryResponse>(`/inspiration-categories/admin/${id}`, payload);
+}
+
+/**
+ * Delete an inspiration category
+ */
+export async function deleteInspirationCategory(
+  id: string
+): Promise<IApiResponse<Record<string, never>>> {
+  return api.delete<Record<string, never>>(`/inspiration-categories/admin/${id}`);
+}
+
