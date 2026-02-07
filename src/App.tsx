@@ -6,6 +6,7 @@ import { Provider } from "react-redux";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { store } from "@/store/store";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import Login from "@/pages/auth/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -17,11 +18,14 @@ import BookingsPage from "@/pages/bookings/Bookings";
 import PaymentsPage from "@/pages/Payments";
 import PayoutsPage from "@/pages/Payouts";
 import SubscriptionsPage from "@/pages/Subscriptions";
-import {
-  CategoriesPage,
-  ReportsPage,
-  ReviewsPage,
-} from "@/pages/PlaceholderPages";
+import TransactionsPage from "@/pages/Transactions";
+import { CategoriesLayout, CategoriesIndex } from "@/components/layout/CategoriesLayout";
+import MarketplaceCategoriesPage from "@/pages/categories/MarketplaceCategories";
+import InspirationCategoriesPage from "@/pages/categories/InspirationCategories";
+import SubscriptionPlansPage from "@/pages/categories/SubscriptionPlans";
+import ReportsPage from "@/pages/Reports";
+import RecommendedProvidersPage from "@/pages/RecommendedProviders";
+import GlitFinderPage from "@/pages/GlitFinder";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,8 +37,9 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <AuthProvider>
-            <Routes>
+          <ThemeProvider>
+            <AuthProvider>
+              <Routes>
               <Route path="/login" element={<Login />} />
               <Route element={<DashboardLayout />}>
                 <Route path="/" element={<Dashboard />} />
@@ -46,13 +51,21 @@ const App = () => (
                 <Route path="/payments" element={<PaymentsPage />} />
                 <Route path="/payouts" element={<PayoutsPage />} />
                 <Route path="/subscriptions" element={<SubscriptionsPage />} />
-                <Route path="/categories" element={<CategoriesPage />} />
+                <Route path="/transactions" element={<TransactionsPage />} />
+                <Route path="/categories" element={<CategoriesLayout />}>
+                  <Route index element={<CategoriesIndex />} />
+                  <Route path="marketplace" element={<MarketplaceCategoriesPage />} />
+                  <Route path="inspiration" element={<InspirationCategoriesPage />} />
+                  <Route path="subscription-plans" element={<SubscriptionPlansPage />} />
+                </Route>
                 <Route path="/reports" element={<ReportsPage />} />
-                <Route path="/reviews" element={<ReviewsPage />} />
+                <Route path="/recommended-providers" element={<RecommendedProvidersPage />} />
+                <Route path="/glitfinder" element={<GlitFinderPage />} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AuthProvider>
+          </ThemeProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

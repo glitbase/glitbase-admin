@@ -263,12 +263,13 @@ export interface Report {
   id: string;
   reporter: {
     id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
   };
-  targetType: "user" | "store" | "product" | "service" | "review" | "glit";
+  type: "user" | "store" | "product" | "service" | "review" | "glit";
   targetId: string;
-  reason: string;
+  title: string;
   description?: string;
   status: ReportStatus;
   reviewNote?: string;
@@ -290,4 +291,119 @@ export interface DashboardStats {
   totalRevenue: number;
   pendingApprovals: number;
   activeReports: number;
+}
+
+export interface MarketplaceCategory {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  icon?: string;
+  type: "product" | "service";
+  subcategories: string[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InspirationCategory {
+  id: string;
+  title: string;
+  emoji?: string;
+  description?: string;
+  imageUrl?: string;
+  icon?: string;
+  type?: "stylesInspo" | "touchupsTransformations";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  type: "monthly" | "yearly";
+  price: number;
+  currency: string;
+  description: string;
+  durationInMonths: number;
+  isActive: boolean;
+  stripePriceId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface RecommendedProvider {
+  id: string;
+  businessName: string;
+  businessType: string;
+  contact: string;
+  city: string;
+  location?: string;
+  reason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface Glit {
+  _id: string;
+  id?: string; // For compatibility
+  user: string; // User ID
+  glitProfile?: {
+    _id: string;
+    user: string;
+    profilePicture?: string;
+    username: string;
+    dateOfBirth?: Date;
+    bio?: string;
+    isPrivate: boolean;
+    followers?: string[];
+    following?: string[];
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  creatorType?: string;
+  image?: string;
+  images?: string[];
+  videos?: string[];
+  title: string;
+  description: string;
+  category?: string;
+  tags?: string[];
+  creatorCredited?: boolean;
+  isPrivate: boolean;
+  likes: number;
+  saves: number;
+  views: number;
+  shares: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type TransactionType = "credit" | "debit" | "transfer";
+export type TransactionReferenceType = "booking" | "payment" | "payout";
+
+export interface Transaction {
+  id: string;
+  transactionReference: string;
+  referenceNumber?: string;
+  type: TransactionType;
+  category: string; // TransactionCategory enum
+  amount: number;
+  currency: "NGN" | "GBP" | "USD";
+  referenceType?: TransactionReferenceType;
+  description?: string;
+  wallet: {
+    id: string;
+    vendor: string; // Vendor ID
+    pendingBalance: number;
+    availableBalance: number;
+    totalLifetimeEarnings: number;
+    currency: "NGN" | "GBP" | "USD";
+  };
+  vendor?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: Date;
+  updatedAt: Date;
 }

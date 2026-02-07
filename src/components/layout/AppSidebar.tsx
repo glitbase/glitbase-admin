@@ -15,6 +15,8 @@ import {
   LogOut,
   ChevronDown,
   Settings,
+  Receipt,
+  Sparkles,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -57,12 +59,14 @@ const managementItems = [
   { title: "Payments", url: "/payments", icon: CreditCard },
   { title: "Payouts", url: "/payouts", icon: Wallet },
   { title: "Subscriptions", url: "/subscriptions", icon: Crown },
+  { title: "Transactions", url: "/transactions", icon: Receipt },
 ];
 
 const contentItems = [
-  { title: "Categories", url: "/categories", icon: FolderTree },
+  { title: "GlitFinder", url: "/glitfinder", icon: Sparkles },
+  { title: "Application Data", url: "/categories", icon: FolderTree },
   { title: "Reports", url: "/reports", icon: Flag },
-  { title: "Reviews", url: "/reviews", icon: Star },
+  { title: "Recommended Providers", url: "/recommended-providers", icon: Star },
 ];
 
 export function AppSidebar() {
@@ -72,7 +76,12 @@ export function AppSidebar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === "/categories") {
+      return location.pathname.startsWith("/categories");
+    }
+    return location.pathname === path;
+  };
   const isInGroup = (items: typeof mainNavItems) =>
     items.some((item) => isActive(item.url));
 
@@ -90,7 +99,7 @@ export function AppSidebar() {
       >
         <NavLink
           to={item.url}
-          end
+          end={item.url !== "/categories"}
           className="flex items-center gap-3"
           activeClassName="bg-sidebar-accent text-sidebar-accent-foreground"
           aria-disabled={item.url === "/products"}

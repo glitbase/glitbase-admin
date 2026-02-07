@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Eye, CreditCard, Loader2 } from "lucide-react";
+import { Eye, CreditCard } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
   FilterSelect,
   StatusBadge,
   EmptyState,
+  TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { getPayments, type GetPaymentsParams } from "@/services/paymentsApi";
@@ -216,9 +217,7 @@ export default function PaymentsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <TableSkeleton columns={8} rows={10} />
       ) : payments.length === 0 ? (
         <div className="card">
           <EmptyState

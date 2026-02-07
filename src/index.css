@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&family=Lora:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -76,7 +76,7 @@
   }
 
   .dark {
-    --background: 240 10% 6%;
+    --background: 240 10% 4%;
     --foreground: 0 0% 95%;
 
     --card: 240 10% 8%;
@@ -100,7 +100,7 @@
     --destructive: 0 62% 45%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 240 5% 18%;
+    --border: 240 5% 20%;
     --input: 240 5% 18%;
     --ring: 173 58% 45%;
 
@@ -131,20 +131,20 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    font-family: 'Rubik', system-ui, -apple-system, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-semibold tracking-tight;
+    @apply font-bold tracking-tight;
+    font-family: 'Lora', serif;
   }
 
   h1 {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
   }
 
   h2, h3 {
-    font-size: 1rem;
+    font-size: 1.125rem;
   }
 }
 
@@ -154,11 +154,17 @@
   }
 
   .page-title {
-    @apply text-base font-semibold text-foreground;
+    @apply font-bold text-foreground;
+    font-family: 'Lora', serif;
+    font-size: 1.25rem;
   }
 
   .stat-card {
     @apply bg-card border border-border rounded-lg p-4 transition-shadow hover:shadow-sm;
+  }
+
+  .dark .stat-card {
+    @apply backdrop-blur-md bg-card/80 border-border/50;
   }
 
   .data-table {
@@ -169,12 +175,78 @@
     @apply text-left text-muted-foreground font-medium py-3 px-4 border-b border-border bg-muted/50;
   }
 
+  .dark .data-table th {
+    @apply backdrop-blur-sm bg-muted/30 border-border/50;
+  }
+
   .data-table td {
     @apply py-3 px-4 border-b border-border;
   }
 
+  .dark .data-table td {
+    @apply border-border/50;
+  }
+
   .data-table tr:hover td {
     @apply bg-muted/30;
+  }
+
+  .dark .data-table tr:hover td {
+    @apply bg-muted/20;
+  }
+
+  /* Glass morphism for cards and tables in dark mode */
+  .dark .bg-card {
+    @apply backdrop-blur-md;
+    background-color: hsl(var(--card) / 0.7);
+    border-color: hsl(var(--border) / 0.4);
+  }
+
+  .dark .card {
+    @apply backdrop-blur-md;
+    background-color: hsl(var(--card) / 0.7);
+    border-color: hsl(var(--border) / 0.4);
+  }
+
+  .dark .bg-card.border {
+    border-color: hsl(var(--border) / 0.4);
+  }
+
+  /* Enhanced glass effect for tables */
+  .dark table.data-table {
+    @apply backdrop-blur-sm;
+  }
+
+  .dark .bg-card.border.rounded-lg {
+    @apply backdrop-blur-md;
+    background-color: hsl(var(--card) / 0.7);
+    border-color: hsl(var(--border) / 0.4);
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+
+  /* Glass effect for header */
+  .dark header {
+    @apply backdrop-blur-md;
+    background-color: hsl(var(--card) / 0.8);
+    border-color: hsl(var(--border) / 0.4);
+  }
+
+  /* Glass effect for popovers */
+  .dark [data-radix-popper-content-wrapper] {
+    @apply backdrop-blur-md;
+  }
+
+  .dark [role="dialog"] {
+    @apply backdrop-blur-md;
+    background-color: hsl(var(--popover) / 0.9);
+    border-color: hsl(var(--border) / 0.4);
+  }
+
+  /* Glass effect for dropdown menus */
+  .dark [data-radix-popper-content-wrapper] > div {
+    @apply backdrop-blur-md;
+    background-color: hsl(var(--popover) / 0.9);
+    border-color: hsl(var(--border) / 0.4);
   }
 
   .status-badge {
@@ -190,6 +262,10 @@
   }
 
   .status-badge.refunded {
+    @apply bg-blue-500/10 text-blue-600 dark:text-blue-400;
+  }
+
+  .status-badge.reviewing {
     @apply bg-blue-500/10 text-blue-600 dark:text-blue-400;
   }
 

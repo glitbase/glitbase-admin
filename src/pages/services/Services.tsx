@@ -1,12 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MoreHorizontal, Check, X, Eye, Briefcase, Clock, Loader2 } from "lucide-react";
+import { MoreHorizontal, Check, X, Eye, Briefcase, Clock } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
   FilterSelect,
   StatusBadge,
   EmptyState,
+  TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -151,19 +152,18 @@ export default function ServicesPage() {
         />
       </div>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : services.length === 0 ? (
+      {isLoading ? (
+        <TableSkeleton columns={8} rows={10} />
+      ) : services.length === 0 ? (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
           <EmptyState
             title="No services found"
             description="Try adjusting your search or filter criteria"
             icon={<Briefcase className="h-6 w-6" />}
           />
-        ) : (
-          <>
+        </div>
+      ) : (
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
             <table className="data-table">
               <thead>
                 <tr>
@@ -286,9 +286,8 @@ export default function ServicesPage() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
-      </div>
     </div>
   );
 }

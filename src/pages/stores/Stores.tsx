@@ -1,11 +1,12 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MoreHorizontal, Eye, Store as StoreIcon, MapPin, Star, Loader2 } from "lucide-react";
+import { MoreHorizontal, Eye, Store as StoreIcon, MapPin, Star } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
   EmptyState,
   StatusBadge,
+  TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import {
@@ -109,19 +110,18 @@ export default function StoresPage() {
         />
       </div>
 
-      <div className="bg-card border border-border rounded-lg overflow-hidden">
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : stores.length === 0 ? (
+      {isLoading ? (
+        <TableSkeleton columns={8} rows={10} />
+      ) : stores.length === 0 ? (
+        <div className="bg-card border border-border rounded-lg overflow-hidden">
           <EmptyState
             title="No stores found"
             description="Try adjusting your search criteria"
             icon={<StoreIcon className="h-6 w-6" />}
           />
-        ) : (
-          <>
+        </div>
+      ) : (
+          <div className="bg-card border border-border rounded-lg overflow-hidden">
             <table className="data-table">
               <thead>
                 <tr>
@@ -269,9 +269,8 @@ export default function StoresPage() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
-      </div>
     </div>
   );
 }

@@ -9,6 +9,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+export { TableSkeleton } from "./TableSkeleton";
+export { GlitCardSkeleton, GlitSkeletonGrid } from "./GlitCardSkeleton";
 
 interface PageHeaderProps {
   title: string;
@@ -112,16 +114,18 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       case "confirmed":
       case "available":
       case "trialing":
+      case "resolved":
         return "approved";
       case "pending":
       case "pending_approval":
-      case "reviewing":
       case "in_progress":
       case "busy":
       case "processing":
       case "past_due":
       case "incomplete":
         return "pending";
+      case "reviewing":
+        return "reviewing";
       case "refunded":
         return "refunded";
       case "rejected":
@@ -133,6 +137,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       case "offline":
       case "incomplete_expired":
       case "unpaid":
+      case "dismissed":
         return "rejected";
       default:
         return "";

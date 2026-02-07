@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Eye, Calendar, Loader2 } from "lucide-react";
+import { Eye, Calendar } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
   FilterSelect,
   StatusBadge,
   EmptyState,
+  TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { getBookings, type GetBookingsParams } from "@/services/bookingsApi";
@@ -202,9 +203,7 @@ export default function BookingsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <TableSkeleton columns={8} rows={10} />
       ) : bookings.length === 0 ? (
         <EmptyState
           icon={<Calendar className="h-12 w-12" />}

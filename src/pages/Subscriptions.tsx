@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Eye, Crown, Loader2 } from "lucide-react";
+import { Eye, Crown } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
   FilterSelect,
   StatusBadge,
   EmptyState,
+  TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import { getSubscriptions, type GetSubscriptionsParams } from "@/services/subscriptionsApi";
@@ -206,9 +207,7 @@ export default function SubscriptionsPage() {
       </div>
 
       {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
+        <TableSkeleton columns={7} rows={10} />
       ) : subscriptions.length === 0 ? (
         <div className="card">
           <EmptyState
