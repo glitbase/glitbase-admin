@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { Eye, Wallet } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal, Wallet, Calendar, User, Hash, Building2, CheckCircle2, Eye } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -11,19 +10,47 @@ import {
   TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
-import { getPayouts, type GetPayoutsParams } from "@/services/payoutsApi";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { getPayouts, approvePayout, type GetPayoutsParams, type ApprovePayoutPayload } from "@/services/payoutsApi";
 import type { Payout } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 export default function PayoutsPage() {
-  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [payoutMethodFilter, setPayoutMethodFilter] = useState<string>("all");
   const [currencyFilter, setCurrencyFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [selectedPayout, setSelectedPayout] = useState<Payout | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
+  const [approvingPayout, setApprovingPayout] = useState<Payout | null>(null);
+  const [approveNotes, setApproveNotes] = useState("");
   const limit = 20;
   const { toast } = useToast();
 
@@ -85,12 +112,18 @@ export default function PayoutsPage() {
 
   // Parse dates from API response (dates come as strings from JSON)
   const payouts = useMemo(() => {
-    return (payoutsResponse?.data?.payouts || []).map((payout) => ({
-      ...payout,
-      requestedAt: new Date(payout.requestedAt),
-      createdAt: new Date(payout.createdAt),
-      updatedAt: new Date(payout.updatedAt),
-    }));
+    return (payoutsResponse?.data?.payouts || []).map((payout) => {
+      const p = payout as Payout & {
+        approvedAt?: string;
+      };
+      return {
+        ...p,
+        requestedAt: new Date(p.requestedAt),
+        approvedAt: p.approvedAt ? new Date(p.approvedAt) : undefined,
+        createdAt: new Date(p.createdAt),
+        updatedAt: new Date(p.updatedAt),
+      };
+    });
   }, [payoutsResponse?.data?.payouts]);
 
   // Handle pagination meta (API returns totalDocs instead of total)
@@ -160,10 +193,65 @@ export default function PayoutsPage() {
     });
   };
 
+  const formatDateTime = (date: Date) => {
+    return new Date(date).toLocaleString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const getInitials = (name: string) => {
     if (!name) return "??";
     const names = name.trim().split(" ");
     return names.map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+  };
+
+  // Approve payout mutation
+  const approveMutation = useMutation({
+    mutationFn: ({ payoutReference, payload }: { payoutReference: string; payload: ApprovePayoutPayload }) =>
+      approvePayout(payoutReference, payload),
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Payout approved successfully",
+        variant: "success",
+      });
+      setIsApproveDialogOpen(false);
+      setApprovingPayout(null);
+      setApproveNotes("");
+      queryClient.invalidateQueries({ queryKey: ["payouts"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error approving payout",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle approve click
+  const handleApproveClick = (payout: Payout) => {
+    setApprovingPayout(payout);
+    setIsApproveDialogOpen(true);
+  };
+
+  // Handle approve submit
+  const handleApproveSubmit = () => {
+    if (!approvingPayout) return;
+    
+    const payload: ApprovePayoutPayload = {};
+    if (approveNotes.trim()) {
+      payload.notes = approveNotes.trim();
+    }
+    
+    approveMutation.mutate({
+      payoutReference: approvingPayout.payoutReference,
+      payload,
+    });
   };
 
   return (
@@ -288,13 +376,34 @@ export default function PayoutsPage() {
                       </p>
                     </td>
                     <td className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => navigate(`/payouts/${payout.id}`)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setSelectedPayout(payout);
+                              setIsSheetOpen(true);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            View
+                          </DropdownMenuItem>
+                          {payout.status === "pending_approval" && (
+                            <DropdownMenuItem
+                              onClick={() => handleApproveClick(payout)}
+                              className="cursor-pointer text-green-600 focus:text-green-600"
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-2" />
+                              Approve
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))}
@@ -334,6 +443,390 @@ export default function PayoutsPage() {
           )}
         </div>
       )}
+
+      {/* Payout Details Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl h-auto overflow-y-auto m-3 rounded-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              Payout Details
+            </SheetTitle>
+            <SheetDescription>
+              View complete information about the payout
+            </SheetDescription>
+          </SheetHeader>
+
+          {selectedPayout && (
+            <div className="space-y-6 py-4">
+              {/* Payout Reference */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Payout Reference
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payout ID
+                    </label>
+                    <p className="text-sm font-mono font-medium text-foreground">
+                      {selectedPayout.id}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payout Reference
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedPayout.payoutReference}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Transaction Reference
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedPayout.transactionReference}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Transaction ID
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedPayout.transactionId}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Wallet Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Wallet Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Wallet ID
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedPayout.wallet.id}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Vendor ID
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedPayout.wallet.vendor}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Currency
+                    </label>
+                    <p className="text-sm text-foreground uppercase">
+                      {selectedPayout.wallet.currency}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Pending Balance
+                    </label>
+                    <p className="text-sm text-foreground">
+                      {formatPrice(selectedPayout.wallet.pendingBalance, selectedPayout.wallet.currency)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Available Balance
+                    </label>
+                    <p className="text-sm text-foreground">
+                      {formatPrice(selectedPayout.wallet.availableBalance, selectedPayout.wallet.currency)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Total Lifetime Earnings
+                    </label>
+                    <p className="text-sm text-foreground">
+                      {formatPrice(selectedPayout.wallet.totalLifetimeEarnings, selectedPayout.wallet.currency)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payout Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Payout Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Amount
+                    </label>
+                    <p className="text-lg font-bold text-foreground">
+                      {formatPrice(selectedPayout.amount, selectedPayout.currency)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Currency
+                    </label>
+                    <p className="text-sm text-foreground uppercase">
+                      {selectedPayout.currency}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Status
+                    </label>
+                    <div>
+                      <StatusBadge status={selectedPayout.status} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Category
+                    </label>
+                    <p className="text-sm text-foreground capitalize">
+                      {selectedPayout.category.replace(/_/g, " ")}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payout Method
+                    </label>
+                    <p className="text-sm text-foreground capitalize">
+                      {selectedPayout.payoutMethod.replace(/_/g, " ")}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payment Gateway
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm text-foreground capitalize">
+                        {selectedPayout.paymentGateway}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bank Account Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Bank Account Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Account Name
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium text-foreground">
+                        {selectedPayout.bankAccount.accountName}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Account Number
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedPayout.bankAccount.accountNumber}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Bank Name
+                    </label>
+                    <p className="text-sm text-foreground">
+                      {selectedPayout.bankAccount.bankName}
+                    </p>
+                  </div>
+
+                  {selectedPayout.bankAccount.bankCode && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Bank Code
+                      </label>
+                      <p className="text-sm text-foreground">
+                        {selectedPayout.bankAccount.bankCode}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedPayout.bankAccount.sortCode && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Sort Code
+                      </label>
+                      <p className="text-sm text-foreground">
+                        {selectedPayout.bankAccount.sortCode}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes */}
+              {selectedPayout.notes && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                    Notes
+                  </h3>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {selectedPayout.notes}
+                  </p>
+                </div>
+              )}
+
+              {/* Timestamps */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Timestamps
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Requested At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedPayout.requestedAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedPayout.requestedAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {(selectedPayout as any).approvedAt && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Approved At
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-foreground">
+                            {formatDate((selectedPayout as any).approvedAt)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDateTime((selectedPayout as any).approvedAt).split(", ")[1]}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Created At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedPayout.createdAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedPayout.createdAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Updated At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedPayout.updatedAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedPayout.updatedAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div> */}
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Approve Payout Dialog */}
+      <Dialog open={isApproveDialogOpen} onOpenChange={setIsApproveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Payout Request</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to approve this payout request? This action will process the payment.
+            </DialogDescription>
+          </DialogHeader>
+
+          {approvingPayout && (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="approve-notes">Admin Notes (Optional)</Label>
+                <Textarea
+                  id="approve-notes"
+                  value={approveNotes}
+                  onChange={(e) => setApproveNotes(e.target.value)}
+                  placeholder="Add any notes about this approval..."
+                  rows={3}
+                />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsApproveDialogOpen(false);
+                setApprovingPayout(null);
+                setApproveNotes("");
+              }}
+              disabled={approveMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApproveSubmit}
+              disabled={approveMutation.isPending}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {approveMutation.isPending ? "Approving..." : "Approve Payout"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

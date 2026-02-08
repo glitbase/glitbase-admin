@@ -61,4 +61,110 @@ export async function getBookingById(reference: string): Promise<IApiResponse<{ 
   return api.get<{ booking: Booking }>(`/bookings/${reference}`);
 }
 
+/**
+ * Force Cancel Booking
+ */
+export interface ForceCancelBookingPayload {
+  reason: string;
+  refundType: "full" | "partial" | "none";
+  customRefundAmount?: number;
+  adminNotes?: string;
+}
+
+export interface ForceCancelBookingResponse {
+  booking: Booking;
+  refundAmount?: number;
+  refundProcessed?: boolean;
+}
+
+export async function forceCancelBooking(
+  reference: string,
+  payload: ForceCancelBookingPayload
+): Promise<IApiResponse<ForceCancelBookingResponse>> {
+  return api.post<ForceCancelBookingResponse>(
+    `/bookings/admin/${reference}/cancel`,
+    payload
+  );
+}
+
+/**
+ * Manual Refund Processing
+ */
+export interface ManualRefundPayload {
+  refundAmount: number;
+  reason: string;
+  adminNotes?: string;
+  notifyCustomer?: boolean;
+  notifyVendor?: boolean;
+}
+
+export interface ManualRefundResponse {
+  booking: Booking;
+  refundAmount: number;
+  refundProcessed: boolean;
+}
+
+export async function manualRefund(
+  reference: string,
+  payload: ManualRefundPayload
+): Promise<IApiResponse<ManualRefundResponse>> {
+  return api.post<ManualRefundResponse>(
+    `/bookings/admin/${reference}/refund`,
+    payload
+  );
+}
+
+/**
+ * Update Booking Status
+ */
+export interface UpdateBookingStatusPayload {
+  status: "pending" | "confirmed" | "ongoing" | "completed" | "rejected" | "refunded" | "cancelled";
+  stage?: string;
+  reason?: string;
+  adminNotes?: string;
+  notifyCustomer?: boolean;
+  notifyVendor?: boolean;
+}
+
+export interface UpdateBookingStatusResponse {
+  booking: Booking;
+}
+
+export async function updateBookingStatus(
+  reference: string,
+  payload: UpdateBookingStatusPayload
+): Promise<IApiResponse<UpdateBookingStatusResponse>> {
+  return api.patch<UpdateBookingStatusResponse>(
+    `/bookings/admin/${reference}/status`,
+    payload
+  );
+}
+
+/**
+ * Resolve Disputes
+ */
+export interface ResolveDisputePayload {
+  resolution: "favor_customer" | "favor_vendor" | "split" | "no_action";
+  resolutionNotes: string;
+  customerRefundPercentage?: number;
+  finalStatus?: "completed" | "cancelled" | "refunded";
+  adminNotes?: string;
+}
+
+export interface ResolveDisputeResponse {
+  booking: Booking;
+  refundAmount?: number;
+  refundProcessed?: boolean;
+}
+
+export async function resolveDispute(
+  reference: string,
+  payload: ResolveDisputePayload
+): Promise<IApiResponse<ResolveDisputeResponse>> {
+  return api.post<ResolveDisputeResponse>(
+    `/bookings/admin/${reference}/resolve-dispute`,
+    payload
+  );
+}
+
 

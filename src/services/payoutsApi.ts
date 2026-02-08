@@ -57,3 +57,24 @@ export async function getPayoutById(id: string): Promise<IApiResponse<{ payout: 
   return api.get<{ payout: Payout }>(`/wallet/payouts/${id}`);
 }
 
+/**
+ * Approve payout request
+ */
+export interface ApprovePayoutPayload {
+  notes?: string;
+}
+
+export interface ApprovePayoutResponse {
+  payout: Payout;
+}
+
+export async function approvePayout(
+  payoutReference: string,
+  payload: ApprovePayoutPayload
+): Promise<IApiResponse<ApprovePayoutResponse>> {
+  return api.patch<ApprovePayoutResponse>(
+    `/wallet/payouts/admin/${payoutReference}/approve`,
+    payload
+  );
+}
+

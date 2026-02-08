@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { Eye, CreditCard } from "lucide-react";
+import { Eye, CreditCard, Calendar, User, Hash, Building2 } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -11,13 +10,20 @@ import {
   TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { getPayments, type GetPaymentsParams } from "@/services/paymentsApi";
 import type { Payment } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function PaymentsPage() {
-  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -25,6 +31,8 @@ export default function PaymentsPage() {
   const [paymentGatewayFilter, setPaymentGatewayFilter] = useState<string>("all");
   const [currencyFilter, setCurrencyFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const limit = 20;
   const { toast } = useToast();
 
@@ -164,6 +172,16 @@ export default function PaymentsPage() {
       day: "numeric",
       month: "short",
       year: "numeric",
+    });
+  };
+
+  const formatDateTime = (date: Date) => {
+    return new Date(date).toLocaleString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -311,7 +329,10 @@ export default function PaymentsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/payments/${payment.id}`)}
+                        onClick={() => {
+                          setSelectedPayment(payment);
+                          setIsSheetOpen(true);
+                        }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -354,6 +375,284 @@ export default function PaymentsPage() {
           )}
         </div>
       )}
+
+      {/* Payment Details Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl h-auto overflow-y-auto m-3 rounded-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              Payment Details
+            </SheetTitle>
+            <SheetDescription>
+              View complete information about the payment
+            </SheetDescription>
+          </SheetHeader>
+
+          {selectedPayment && (
+            <div className="space-y-6 py-4">
+              {/* Payment Reference */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Payment Reference
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payment ID
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-mono font-medium text-foreground">
+                        {selectedPayment.id}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payment Reference
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedPayment.paymentReference}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* User Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  User Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      User ID
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedPayment.user}
+                    </p>
+                  </div>
+
+                  {selectedPayment.metadata?.contactInfo && (
+                    <>
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Name
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <User className="h-4 w-4 text-muted-foreground" />
+                          <p className="text-sm font-medium text-foreground capitalize">
+                            {selectedPayment.metadata.contactInfo.name}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Email
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {selectedPayment.metadata.contactInfo.email}
+                        </p>
+                      </div>
+
+                      {selectedPayment.metadata.contactInfo.phoneNumber && (
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-muted-foreground">
+                            Phone Number
+                          </label>
+                          <p className="text-sm text-foreground">
+                            {selectedPayment.metadata.contactInfo.phoneNumber}
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Payment Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Payment Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payment Type
+                    </label>
+                    <p className="text-sm text-foreground capitalize">
+                      {selectedPayment.paymentType.replace(/_/g, " ")}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Status
+                    </label>
+                    <div>
+                      <StatusBadge status={selectedPayment.status} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payment Method
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm text-foreground capitalize">
+                        {selectedPayment.paymentMethod.replace(/_/g, " ")}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Payment Gateway
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm text-foreground capitalize">
+                        {selectedPayment.paymentGateway}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Amount Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Amount Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Amount
+                    </label>
+                    <p className="text-lg font-bold text-foreground">
+                      {formatPrice(selectedPayment.amount, selectedPayment.currency)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Currency
+                    </label>
+                    <p className="text-sm text-foreground uppercase">
+                      {selectedPayment.currency}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Gateway Information */}
+              {(selectedPayment.gatewayCardId || selectedPayment.gatewayCustomerId || selectedPayment.gatewayPaymentId) && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                    Gateway Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedPayment.gatewayCardId && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Gateway Card ID
+                        </label>
+                        <p className="text-sm font-mono text-foreground">
+                          {selectedPayment.gatewayCardId}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedPayment.gatewayCustomerId && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Gateway Customer ID
+                        </label>
+                        <p className="text-sm font-mono text-foreground">
+                          {selectedPayment.gatewayCustomerId}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedPayment.gatewayPaymentId && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Gateway Payment ID
+                        </label>
+                        <p className="text-sm font-mono text-foreground">
+                          {selectedPayment.gatewayPaymentId}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Timestamps */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Timestamps
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {selectedPayment.paidAt && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Paid At
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-foreground">
+                            {formatDate(selectedPayment.paidAt)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDateTime(selectedPayment.paidAt).split(", ")[1]}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Created At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedPayment.createdAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedPayment.createdAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Updated At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedPayment.updatedAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedPayment.updatedAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

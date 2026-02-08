@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { Eye, Receipt, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight } from "lucide-react";
+import { Eye, Receipt, ArrowDownCircle, ArrowUpCircle, ArrowLeftRight, Wallet, User, Calendar, Hash, FileText } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -11,13 +10,32 @@ import {
   TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { getTransactions, type GetTransactionsParams } from "@/services/transactionsApi";
 import type { Transaction } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+
+type ExtendedTransaction = Transaction & {
+  balanceBefore?: number;
+  balanceAfter?: number;
+  referenceId?: string;
+  metadata?: {
+    from?: string;
+    to?: string;
+    availableBalanceBefore?: number;
+    availableBalanceAfter?: number;
+  };
+};
 
 export default function TransactionsPage() {
-  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
@@ -25,6 +43,8 @@ export default function TransactionsPage() {
   const [referenceTypeFilter, setReferenceTypeFilter] = useState<string>("all");
   const [currencyFilter, setCurrencyFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [selectedTransaction, setSelectedTransaction] = useState<ExtendedTransaction | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const limit = 20;
   const { toast } = useToast();
 
@@ -90,11 +110,14 @@ export default function TransactionsPage() {
 
   // Parse dates from API response (dates come as strings from JSON)
   const transactions = useMemo(() => {
-    return (transactionsResponse?.data?.transactions || []).map((transaction) => ({
-      ...transaction,
-      createdAt: new Date(transaction.createdAt),
-      updatedAt: new Date(transaction.updatedAt),
-    }));
+    return (transactionsResponse?.data?.transactions || []).map((transaction) => {
+      const tx = transaction as ExtendedTransaction;
+      return {
+        ...tx,
+        createdAt: new Date(tx.createdAt),
+        updatedAt: new Date(tx.updatedAt),
+      };
+    });
   }, [transactionsResponse?.data?.transactions]);
 
   // Handle pagination meta
@@ -150,7 +173,7 @@ export default function TransactionsPage() {
       NGN: "₦",
     };
     // Amount is in lowest unit (cents/pence/kobo), divide by 100
-    const actualAmount = price / 100;
+    const actualAmount = price;
     const currencyUpper = currency.toUpperCase();
     return `${symbols[currencyUpper] || currencyUpper}${actualAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
@@ -202,6 +225,19 @@ export default function TransactionsPage() {
         return "text-blue-600";
       default:
         return "text-muted-foreground";
+    }
+  };
+
+  const getTypeBadgeClass = (type: string) => {
+    switch (type) {
+      case "credit":
+        return "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20";
+      case "debit":
+        return "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20";
+      case "transfer":
+        return "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20";
+      default:
+        return "bg-muted text-muted-foreground";
     }
   };
 
@@ -318,9 +354,6 @@ export default function TransactionsPage() {
                         {transaction.type === "credit" ? "+" : transaction.type === "debit" ? "-" : ""}
                         {formatPrice(transaction.amount, transaction.currency)}
                       </p>
-                      <p className="text-xs text-muted-foreground uppercase">
-                        {transaction.currency}
-                      </p>
                     </td>
                     <td>
                       <span className="text-sm text-foreground capitalize">
@@ -348,7 +381,10 @@ export default function TransactionsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/transactions/${transaction.id}`)}
+                        onClick={() => {
+                          setSelectedTransaction(transaction);
+                          setIsSheetOpen(true);
+                        }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -391,6 +427,376 @@ export default function TransactionsPage() {
           )}
         </div>
       )}
+
+      {/* Transaction Details Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl h-auto overflow-y-auto m-3 rounded-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              Transaction Details
+            </SheetTitle>
+            <SheetDescription>
+              View complete information about the transaction
+            </SheetDescription>
+          </SheetHeader>
+
+          {selectedTransaction && (
+            <div className="space-y-6 py-4">
+              {/* Transaction Reference */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Transaction Reference
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Transaction Reference
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-mono font-medium text-foreground">
+                        {selectedTransaction.transactionReference}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedTransaction.referenceNumber && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Reference Number
+                      </label>
+                      <p className="text-sm font-mono text-foreground">
+                        {selectedTransaction.referenceNumber}
+                      </p>
+                    </div>
+                  )}
+                  {selectedTransaction.referenceId && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Reference ID
+                      </label>
+                      <p className="text-sm font-mono text-foreground">
+                        {selectedTransaction.referenceId}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Transaction Type & Amount */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Transaction Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Type
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {getTypeIcon(selectedTransaction.type)}
+                      <Badge className={`capitalize text-xs px-2.5 py-1 border ${getTypeBadgeClass(selectedTransaction.type)}`}>
+                        {selectedTransaction.type}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Category
+                    </label>
+                    <p className="text-sm text-foreground capitalize">
+                      {selectedTransaction.category.replace(/_/g, " ")}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Amount
+                    </label>
+                    <p className={`text-lg font-bold ${getTypeColor(selectedTransaction.type)}`}>
+                      {selectedTransaction.type === "credit" ? "+" : selectedTransaction.type === "debit" ? "-" : ""}
+                      {formatPrice(selectedTransaction.amount, selectedTransaction.currency)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Currency
+                    </label>
+                    <p className="text-sm text-foreground uppercase">
+                      {selectedTransaction.currency}
+                    </p>
+                  </div>
+
+                  {selectedTransaction.balanceBefore !== undefined && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Balance Before
+                      </label>
+                      <p className="text-sm text-foreground">
+                        {formatPrice(selectedTransaction.balanceBefore, selectedTransaction.currency)}
+                      </p>
+                    </div>
+                  )}
+
+                  {selectedTransaction.balanceAfter !== undefined && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Balance After
+                      </label>
+                      <p className="text-sm text-foreground">
+                        {formatPrice(selectedTransaction.balanceAfter, selectedTransaction.currency)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Description */}
+              {selectedTransaction.description && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                    Description
+                  </h3>
+                  <div className="flex items-start gap-2">
+                    <FileText className="h-4 w-4 text-muted-foreground mt-0.5" />
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {selectedTransaction.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Reference Information */}
+              {selectedTransaction.referenceType && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                    Reference Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Reference Type
+                      </label>
+                      <p className="text-sm text-foreground capitalize">
+                        {selectedTransaction.referenceType}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Wallet Information */}
+              {selectedTransaction.wallet && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                    Wallet Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Wallet ID
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Wallet className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-mono text-foreground">
+                          {selectedTransaction.wallet.id}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Currency
+                      </label>
+                      <p className="text-sm text-foreground uppercase">
+                        {selectedTransaction.wallet.currency}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Vendor ID
+                      </label>
+                      <p className="text-sm font-mono text-foreground">
+                        {selectedTransaction.wallet.vendor}
+                      </p>
+                    </div>
+
+                    {selectedTransaction.wallet.pendingBalance !== undefined && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Pending Balance
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {formatPrice(selectedTransaction.wallet.pendingBalance, selectedTransaction.wallet.currency)}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedTransaction.wallet.availableBalance !== undefined && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Available Balance
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {formatPrice(selectedTransaction.wallet.availableBalance, selectedTransaction.wallet.currency)}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedTransaction.wallet.totalLifetimeEarnings !== undefined && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Total Lifetime Earnings
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {formatPrice(selectedTransaction.wallet.totalLifetimeEarnings, selectedTransaction.wallet.currency)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Vendor Information */}
+              {selectedTransaction.vendor && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                    Vendor Information
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Vendor ID
+                      </label>
+                      <p className="text-sm font-mono text-foreground">
+                        {selectedTransaction.vendor.id}
+                      </p>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Name
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <User className="h-4 w-4 text-muted-foreground" />
+                        <p className="text-sm font-medium text-foreground">
+                          {selectedTransaction.vendor.name}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Email
+                      </label>
+                      <p className="text-sm text-foreground">
+                        {selectedTransaction.vendor.email}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Metadata */}
+              {selectedTransaction.metadata && (
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                    Metadata
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedTransaction.metadata.from && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          From
+                        </label>
+                        <p className="text-sm text-foreground capitalize">
+                          {selectedTransaction.metadata.from}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedTransaction.metadata.to && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          To
+                        </label>
+                        <p className="text-sm text-foreground capitalize">
+                          {selectedTransaction.metadata.to}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedTransaction.metadata.availableBalanceBefore !== undefined && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Available Balance Before
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {formatPrice(selectedTransaction.metadata.availableBalanceBefore, selectedTransaction.currency)}
+                        </p>
+                      </div>
+                    )}
+
+                    {selectedTransaction.metadata.availableBalanceAfter !== undefined && (
+                      <div className="space-y-1">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Available Balance After
+                        </label>
+                        <p className="text-sm text-foreground">
+                          {formatPrice(selectedTransaction.metadata.availableBalanceAfter, selectedTransaction.currency)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Timestamps */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Timestamps
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Created At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedTransaction.createdAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedTransaction.createdAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Updated At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedTransaction.updatedAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedTransaction.updatedAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

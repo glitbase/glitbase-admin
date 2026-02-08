@@ -1,7 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "react-router-dom";
-import { Eye, Crown } from "lucide-react";
+import { Eye, Crown, Calendar, User, CreditCard, Hash } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -11,19 +10,28 @@ import {
   TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { getSubscriptions, type GetSubscriptionsParams } from "@/services/subscriptionsApi";
 import type { Subscription } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function SubscriptionsPage() {
-  const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [subscriptionTypeFilter, setSubscriptionTypeFilter] = useState<string>("all");
   const [currencyFilter, setCurrencyFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const limit = 20;
   const { toast } = useToast();
 
@@ -164,6 +172,16 @@ export default function SubscriptionsPage() {
     });
   };
 
+  const formatDateTime = (date: Date) => {
+    return new Date(date).toLocaleString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const getInitials = (name: string) => {
     if (!name) return "??";
     const names = name.trim().split(" ");
@@ -290,7 +308,10 @@ export default function SubscriptionsPage() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => navigate(`/subscriptions/${subscription.id}`)}
+                        onClick={() => {
+                          setSelectedSubscription(subscription);
+                          setIsSheetOpen(true);
+                        }}
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
@@ -333,6 +354,321 @@ export default function SubscriptionsPage() {
           )}
         </div>
       )}
+
+      {/* Subscription Details Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl h-auto overflow-y-auto m-3 rounded-md">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              Subscription Details
+            </SheetTitle>
+            <SheetDescription>
+              View complete information about the subscription
+            </SheetDescription>
+          </SheetHeader>
+
+          {selectedSubscription && (
+            <div className="space-y-6 py-4">
+              {/* Subscription ID */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Subscription Reference
+                </h3>
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Subscription ID
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Hash className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-mono font-medium text-foreground">
+                        {selectedSubscription.id}
+                      </p>
+                    </div>
+                  </div>
+                  {selectedSubscription.stripeSubscriptionId && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Stripe Subscription ID
+                      </label>
+                      <p className="text-sm font-mono text-foreground">
+                        {selectedSubscription.stripeSubscriptionId}
+                      </p>
+                    </div>
+                  )}
+                  {selectedSubscription.stripeCustomerId && (
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Stripe Customer ID
+                      </label>
+                      <p className="text-sm font-mono text-foreground">
+                        {selectedSubscription.stripeCustomerId}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* User Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  User Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      User ID
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedSubscription.userId}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Name
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <p className="text-sm font-medium text-foreground capitalize">
+                        {selectedSubscription.user.name}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Email
+                    </label>
+                    <p className="text-sm text-foreground">
+                      {selectedSubscription.user.email}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Plan Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Plan Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Plan ID
+                    </label>
+                    <p className="text-sm font-mono text-foreground">
+                      {selectedSubscription.planId}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Plan Name
+                    </label>
+                    <p className="text-sm font-medium text-foreground">
+                      {selectedSubscription.plan.name}
+                    </p>
+                  </div>
+
+                  {selectedSubscription.plan.description && (
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Description
+                      </label>
+                      <p className="text-sm text-foreground">
+                        {selectedSubscription.plan.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Subscription Type
+                    </label>
+                    <Badge className="capitalize text-xs px-2.5 py-1 bg-primary/10 text-primary border border-primary/20">
+                      {selectedSubscription.subscriptionType === "monthly" ? "Monthly" : selectedSubscription.subscriptionType === "yearly" ? "Yearly" : selectedSubscription.subscriptionType}
+                    </Badge>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Status
+                    </label>
+                    <div>
+                      <StatusBadge status={selectedSubscription.status} />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pricing Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Pricing Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Amount
+                    </label>
+                    <p className="text-lg font-bold text-foreground">
+                      {formatPrice(selectedSubscription.amount, selectedSubscription.currency.toUpperCase())}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Currency
+                    </label>
+                    <p className="text-sm text-foreground uppercase">
+                      {selectedSubscription.currency}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Plan Price
+                    </label>
+                    <p className="text-sm text-foreground">
+                      {formatPrice(selectedSubscription.plan.price, selectedSubscription.plan.currency)}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Plan Currency
+                    </label>
+                    <p className="text-sm text-foreground uppercase">
+                      {selectedSubscription.plan.currency}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Period Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Period Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Current Period Start
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedSubscription.currentPeriodStart)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedSubscription.currentPeriodStart).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Current Period End
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedSubscription.currentPeriodEnd)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedSubscription.currentPeriodEnd).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 md:col-span-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Cancel at Period End
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {selectedSubscription.cancelAtPeriodEnd ? (
+                        <Badge variant="destructive" className="text-xs">
+                          Yes - Will cancel at period end
+                        </Badge>
+                      ) : (
+                        <Badge variant="secondary" className="text-xs">
+                          No - Will auto-renew
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedSubscription.canceledAt && (
+                    <div className="space-y-1 md:col-span-2">
+                      <label className="text-xs font-medium text-muted-foreground">
+                        Canceled At
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm text-foreground">
+                            {formatDate(selectedSubscription.canceledAt)}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDateTime(selectedSubscription.canceledAt).split(", ")[1]}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Timestamps */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Timestamps
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Created At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedSubscription.createdAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedSubscription.createdAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Updated At
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm text-foreground">
+                          {formatDate(selectedSubscription.updatedAt)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDateTime(selectedSubscription.updatedAt).split(", ")[1]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
