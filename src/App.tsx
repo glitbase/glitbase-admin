@@ -23,6 +23,8 @@ import { CategoriesLayout, CategoriesIndex } from "@/components/layout/Categorie
 import MarketplaceCategoriesPage from "@/pages/categories/MarketplaceCategories";
 import InspirationCategoriesPage from "@/pages/categories/InspirationCategories";
 import SubscriptionPlansPage from "@/pages/categories/SubscriptionPlans";
+import FAQsPage from "@/pages/categories/FAQs";
+import GlitfinderCategoriesPage from "@/pages/categories/GlitfinderCategories";
 import ReportsPage from "@/pages/Reports";
 import RecommendedProvidersPage from "@/pages/RecommendedProviders";
 import GlitFinderPage from "@/pages/GlitFinder";
@@ -57,6 +59,8 @@ const App = () => (
                   <Route path="marketplace" element={<MarketplaceCategoriesPage />} />
                   <Route path="inspiration" element={<InspirationCategoriesPage />} />
                   <Route path="subscription-plans" element={<SubscriptionPlansPage />} />
+                  <Route path="faqs" element={<FAQsPage />} />
+                  <Route path="glitfinder-categories" element={<GlitfinderCategoriesPage />} />
                 </Route>
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/recommended-providers" element={<RecommendedProvidersPage />} />

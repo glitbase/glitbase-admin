@@ -79,7 +79,7 @@ export function DashboardLayout() {
             </div>
           </header>
 
-          <main className="flex-1 p-6 overflow-auto bg-background h-64">
+          <main className="flex-1 p-3 sm:p-6 overflow-auto bg-background h-64">
             <Outlet />
           </main>
         </div>

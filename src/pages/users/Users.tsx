@@ -235,7 +235,7 @@ export default function UsersPage() {
       {isLoading ? (
         <TableSkeleton columns={7} rows={10} />
       ) : users.length === 0 ? (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="card">
           <EmptyState
             title="No users found"
             description="Try adjusting your search or filter criteria"
@@ -243,25 +243,106 @@ export default function UsersPage() {
           />
         </div>
       ) : (
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>User</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Subscription</th>
-                  <th>Country</th>
-                  <th>Joined</th>
-                  <th className="w-[50px]"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((user) => (
-                <tr key={user.id}>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
+          <div className="card">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Subscription</th>
+                    <th>Country</th>
+                    <th>Joined</th>
+                    <th className="w-[50px]"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                  <tr key={user.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-8 w-8">
+                          {user.profileImageUrl && (
+                            <AvatarImage src={user.profileImageUrl} alt={`${user.firstName} ${user.lastName}`} />
+                          )}
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
+                            {getInitials(user)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          {user.firstName && user.lastName ?
+                          <p className="font-medium text-foreground capitalize">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          :
+                          <p className="font-medium text-foreground capitalize">
+                            Not Provided
+                          </p>}
+                          <p className="text-xs text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="capitalize text-foreground">
+                        {user.activeRole}
+                      </span>
+                    </td>
+                    <td>
+                      {user.vendorOnboardingStatus ? (
+                        <StatusBadge status={user.vendorOnboardingStatus} />
+                      ) : (
+                        <StatusBadge status={user.isEmailVerified ? "active" : "pending"} />
+                      )}
+                    </td>
+                    <td>
+                      {user.isSubscriptionActive !== undefined ? (
+                        <StatusBadge status={user.isSubscriptionActive ? "active" : "inactive"} />
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="text-muted-foreground">
+                      {user.countryName || "—"}
+                    </td>
+                    <td className="text-muted-foreground">
+                      {formatDate(user.createdAt)}
+                    </td>
+                    <td>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem>
+                            <Eye className="h-4 w-4 mr-2" />
+                            View details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            <Mail className="h-4 w-4 mr-2" />
+                            Send email
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-border">
+              {users.map((user) => (
+                <div key={user.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="h-10 w-10 shrink-0">
                         {user.profileImageUrl && (
                           <AvatarImage src={user.profileImageUrl} alt={`${user.firstName} ${user.lastName}`} />
                         )}
@@ -269,54 +350,16 @@ export default function UsersPage() {
                           {getInitials(user)}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        {user.firstName && user.lastName ?
-                        <p className="font-medium text-foreground capitalize">
-                          {user.firstName} {user.lastName}
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground capitalize truncate">
+                          {user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : "Not Provided"}
                         </p>
-                        :
-                        <p className="font-medium text-foreground capitalize">
-                          Not Provided
-                        </p>}
-                        <p className="text-xs text-muted-foreground">
-                          {user.email}
-                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
                       </div>
                     </div>
-                  </td>
-                  <td>
-                    <span className="capitalize text-foreground">
-                      {user.activeRole}
-                    </span>
-                  </td>
-                  <td>
-                    {user.vendorOnboardingStatus ? (
-                      <StatusBadge status={user.vendorOnboardingStatus} />
-                    ) : (
-                      <StatusBadge status={user.isEmailVerified ? "active" : "pending"} />
-                    )}
-                  </td>
-                  <td>
-                    {user.isSubscriptionActive !== undefined ? (
-                      <StatusBadge status={user.isSubscriptionActive ? "active" : "inactive"} />
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </td>
-                  <td className="text-muted-foreground">
-                    {user.countryName || "—"}
-                  </td>
-                  <td className="text-muted-foreground">
-                    {formatDate(user.createdAt)}
-                  </td>
-                  <td>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                        >
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
@@ -331,40 +374,36 @@ export default function UsersPage() {
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
-                  </td>
-                </tr>
-                ))}
-              </tbody>
-            </table>
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <span className="capitalize text-foreground bg-muted px-2 py-1 rounded">{user.activeRole}</span>
+                    {user.vendorOnboardingStatus ? (
+                      <StatusBadge status={user.vendorOnboardingStatus} />
+                    ) : (
+                      <StatusBadge status={user.isEmailVerified ? "active" : "pending"} />
+                    )}
+                    {user.isSubscriptionActive !== undefined && (
+                      <StatusBadge status={user.isSubscriptionActive ? "active" : "inactive"} />
+                    )}
+                  </div>
+                  <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                    {user.countryName && <span>{user.countryName}</span>}
+                    <span>Joined {formatDate(user.createdAt)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
             
             {/* Pagination */}
             {paginationMeta && paginationMeta.totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-                <div className="text-sm text-muted-foreground">
-                  Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                  {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                  {paginationMeta.total} users
+              <div className="pagination-bar">
+                <div className="pagination-info">
+                  Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} users
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={!paginationMeta.hasPrevPage || isLoading}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    Page {paginationMeta.page} of {paginationMeta.totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={!paginationMeta.hasNextPage || isLoading}
-                  >
-                    Next
-                  </Button>
+                <div className="pagination-controls">
+                  <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                  <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
                 </div>
               </div>
             )}

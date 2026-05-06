@@ -274,6 +274,34 @@
   }
 
   .filter-bar {
-    @apply flex items-center gap-3 mb-4 flex-wrap;
+    @apply flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-4;
+    flex-wrap: wrap;
+  }
+
+  /* Card class used across pages */
+  .card {
+    @apply bg-card border border-border rounded-lg overflow-hidden;
+  }
+
+  /* Mobile card list for tables */
+  .mobile-card-list {
+    @apply divide-y divide-border;
+  }
+
+  .mobile-card-item {
+    @apply p-4 space-y-3;
+  }
+
+  /* Responsive pagination */
+  .pagination-bar {
+    @apply flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-4 py-3 border-t border-border;
+  }
+
+  .pagination-info {
+    @apply text-xs sm:text-sm text-muted-foreground;
+  }
+
+  .pagination-controls {
+    @apply flex items-center gap-2 self-end sm:self-auto;
   }
 }

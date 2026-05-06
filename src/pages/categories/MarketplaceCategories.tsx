@@ -479,7 +479,7 @@ export default function MarketplaceCategoriesPage() {
           options={typeOptions}
           allLabel="All Types"
         />
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="ml-auto">
+        <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
           <Plus className="h-4 w-4 mr-2" />
           Create Category
         </Button>
@@ -501,7 +501,8 @@ export default function MarketplaceCategoriesPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -521,22 +522,14 @@ export default function MarketplaceCategoriesPage() {
                           {category.imageUrl ? (
                             <AvatarImage src={category.imageUrl} alt={category.name} />
                           ) : category.icon ? (
-                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                              {category.icon}
-                            </AvatarFallback>
+                            <AvatarFallback className="bg-primary/10 text-primary text-lg">{category.icon}</AvatarFallback>
                           ) : (
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              <ImageIcon className="h-5 w-5" />
-                            </AvatarFallback>
+                            <AvatarFallback className="bg-primary/10 text-primary"><ImageIcon className="h-5 w-5" /></AvatarFallback>
                           )}
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground">{category.name}</p>
-                          {category.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-1">
-                              {category.description}
-                            </p>
-                          )}
+                          {category.description && <p className="text-xs text-muted-foreground line-clamp-1">{category.description}</p>}
                         </div>
                       </div>
                     </td>
@@ -549,9 +542,7 @@ export default function MarketplaceCategoriesPage() {
                         ) : (
                           <Briefcase className="h-4 w-4 text-green-600" />
                         )}
-                        <span className="text-sm text-foreground capitalize">
-                          {category.type}
-                        </span>
+                        <span className="text-sm text-foreground capitalize">{category.type}</span>
                       </div>
                     </td>
                     <td>
@@ -567,9 +558,7 @@ export default function MarketplaceCategoriesPage() {
                               <h4 className="text-sm font-semibold text-foreground mb-2">Subcategories</h4>
                               <ul className="space-y-1">
                                 {category.subcategories.map((subcategory, index) => (
-                                  <li key={index} className="text-sm text-muted-foreground">
-                                    • {subcategory}
-                                  </li>
+                                  <li key={index} className="text-sm text-muted-foreground">• {subcategory}</li>
                                 ))}
                               </ul>
                             </div>
@@ -579,27 +568,18 @@ export default function MarketplaceCategoriesPage() {
                         <span className="text-sm text-muted-foreground">No subcategories</span>
                       )}
                     </td>
-                    <td>
-                      <p className="text-sm text-foreground">{formatDate(category.createdAt)}</p>
-                    </td>
+                    <td><p className="text-sm text-foreground">{formatDate(category.createdAt)}</p></td>
                     <td className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            <Edit className="h-4 w-4 mr-2" />Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteClick(category)}
-                            className="text-destructive focus:text-destructive cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                          <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
+                            <Trash2 className="h-4 w-4 mr-2" />Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -610,33 +590,65 @@ export default function MarketplaceCategoriesPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} categories
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {categories.map((category) => (
+              <div key={category.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="h-10 w-10 shrink-0">
+                      {category.imageUrl ? (
+                        <AvatarImage src={category.imageUrl} alt={category.name} />
+                      ) : category.icon ? (
+                        <AvatarFallback className="bg-primary/10 text-primary text-lg">{category.icon}</AvatarFallback>
+                      ) : (
+                        <AvatarFallback className="bg-primary/10 text-primary"><ImageIcon className="h-5 w-5" /></AvatarFallback>
+                      )}
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground">{category.name}</p>
+                      {category.description && <p className="text-xs text-muted-foreground line-clamp-1">{category.description}</p>}
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
+                        <Edit className="h-4 w-4 mr-2" />Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
+                        <Trash2 className="h-4 w-4 mr-2" />Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-1.5">
+                    {category.type === "product" ? <Package className="h-4 w-4 text-blue-600" /> : <Briefcase className="h-4 w-4 text-green-600" />}
+                    <span className="capitalize text-foreground">{category.type}</span>
+                  </div>
+                  {category.subcategories.length > 0 ? (
+                    <span className="text-xs text-muted-foreground">{category.subcategories.length} subcategories</span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No subcategories</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">{formatDate(category.createdAt)}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} categories
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

@@ -323,7 +323,7 @@ export default function InspirationCategoriesPage() {
           options={typeOptions}
           allLabel="All Types"
         />
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="ml-auto">
+        <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
           <Plus className="h-4 w-4 mr-2" />
           Create Category
         </Button>
@@ -345,7 +345,8 @@ export default function InspirationCategoriesPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -368,55 +369,34 @@ export default function InspirationCategoriesPage() {
                               <img src={category.icon} alt={category.title} className="h-full w-full object-contain" />
                             </AvatarFallback>
                           ) : category.emoji ? (
-                            <AvatarFallback className="bg-primary/10 text-primary text-lg">
-                              {category.emoji}
-                            </AvatarFallback>
+                            <AvatarFallback className="bg-primary/10 text-primary text-lg">{category.emoji}</AvatarFallback>
                           ) : (
-                            <AvatarFallback className="bg-primary/10 text-primary">
-                              <ImageIcon className="h-5 w-5" />
-                            </AvatarFallback>
+                            <AvatarFallback className="bg-primary/10 text-primary"><ImageIcon className="h-5 w-5" /></AvatarFallback>
                           )}
                         </Avatar>
                         <div className="flex-1 min-w-0">
                           <p className="font-medium text-foreground">{category.title}</p>
-                          {category.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-1">
-                              {category.description}
-                            </p>
-                          )}
+                          {category.description && <p className="text-xs text-muted-foreground line-clamp-1">{category.description}</p>}
                         </div>
                       </div>
                     </td>
                     <td>
                       {category.type ? (
-                        <span className="text-sm text-foreground capitalize">
-                          {category.type === "stylesInspo" ? "Styles Inspiration" : "Touchups & Transformations"}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
+                        <span className="text-sm text-foreground capitalize">{category.type === "stylesInspo" ? "Styles Inspiration" : "Touchups & Transformations"}</span>
+                      ) : <span className="text-sm text-muted-foreground">—</span>}
                     </td>
-                    <td>
-                      <p className="text-sm text-foreground">{formatDate(category.createdAt)}</p>
-                    </td>
+                    <td><p className="text-sm text-foreground">{formatDate(category.createdAt)}</p></td>
                     <td className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            <Edit className="h-4 w-4 mr-2" />Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteClick(category)}
-                            className="text-destructive focus:text-destructive cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                          <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
+                            <Trash2 className="h-4 w-4 mr-2" />Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -427,33 +407,56 @@ export default function InspirationCategoriesPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} categories
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {categories.map((category) => (
+              <div key={category.id} className="p-4 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="h-10 w-10 shrink-0">
+                    {category.imageUrl ? (
+                      <AvatarImage src={category.imageUrl} alt={category.title} />
+                    ) : category.icon ? (
+                      <AvatarFallback className="bg-primary/10 text-primary text-lg">
+                        <img src={category.icon} alt={category.title} className="h-full w-full object-contain" />
+                      </AvatarFallback>
+                    ) : category.emoji ? (
+                      <AvatarFallback className="bg-primary/10 text-primary text-lg">{category.emoji}</AvatarFallback>
+                    ) : (
+                      <AvatarFallback className="bg-primary/10 text-primary"><ImageIcon className="h-5 w-5" /></AvatarFallback>
+                    )}
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground">{category.title}</p>
+                    <p className="text-xs text-muted-foreground">{category.type === "stylesInspo" ? "Styles Inspiration" : "Touchups & Transformations"}</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(category.createdAt)}</p>
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
+                      <Edit className="h-4 w-4 mr-2" />Edit
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
+                      <Trash2 className="h-4 w-4 mr-2" />Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} categories
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

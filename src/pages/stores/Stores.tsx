@@ -113,7 +113,7 @@ export default function StoresPage() {
       {isLoading ? (
         <TableSkeleton columns={8} rows={10} />
       ) : stores.length === 0 ? (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
+        <div className="card">
           <EmptyState
             title="No stores found"
             description="Try adjusting your search criteria"
@@ -121,151 +121,155 @@ export default function StoresPage() {
           />
         </div>
       ) : (
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Store</th>
-                  <th>Type</th>
-                  <th>Location</th>
-                  <th>Rating</th>
-                  <th>Views</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th className="w-[50px]"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {stores.map((store) => (
-                <tr key={store.id}>
-                  <td>
-                    <div className="flex items-center gap-3">
-                      {store.bannerImageUrl ? (
-                        <img
-                          src={store.bannerImageUrl}
-                          alt={store.name}
-                          className="w-10 h-10 rounded-lg object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                          <StoreIcon className="h-5 w-5 text-muted-foreground" />
+          <div className="card">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Store</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Rating</th>
+                    <th>Views</th>
+                    <th>Status</th>
+                    <th>Created</th>
+                    <th className="w-[50px]"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stores.map((store) => (
+                  <tr key={store.id}>
+                    <td>
+                      <div className="flex items-center gap-3">
+                        {store.bannerImageUrl ? (
+                          <img src={store.bannerImageUrl} alt={store.name} className="w-10 h-10 rounded-lg object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                            <StoreIcon className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        )}
+                        <div>
+                          <p className="font-medium text-foreground">{store.name}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">{store.description}</p>
                         </div>
-                      )}
-                      <div>
-                        <p className="font-medium text-foreground">
-                          {store.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground line-clamp-1 max-w-[200px]">
-                          {store.description}
-                        </p>
                       </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {store.type && store.type.length > 0 ? (
-                        store.type.map((type) => (
-                          <span
-                            key={type}
-                            className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-primary/10 text-primary"
-                          >
-                            {type}
-                          </span>
-                        ))
+                    </td>
+                    <td>
+                      <div className="flex flex-wrap gap-1">
+                        {store.type && store.type.length > 0 ? (
+                          store.type.map((type) => (
+                            <span key={type} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-primary/10 text-primary">{type}</span>
+                          ))
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      {store.location ? (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-3 w-3" />
+                          <span>{store.location.city}, {store.location.state}</span>
+                        </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
-                    </div>
-                  </td>
-                  
-                  <td>
-                    {store.location ? (
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        <MapPin className="h-3 w-3" />
-                        <span>
-                          {store.location.city}, {store.location.state}
-                        </span>
+                    </td>
+                    <td>
+                      {store.rating ? (
+                        <div className="flex items-center gap-1">
+                          <Star className="h-3 w-3 fill-warning text-warning" />
+                          <span className="font-medium text-foreground">{store.rating.toFixed(1)}</span>
+                          <span className="text-xs text-muted-foreground mt-[1.5px]">({store.reviewCount})</span>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">No reviews</span>
+                      )}
+                    </td>
+                    <td className="text-muted-foreground">{store.viewCount.toLocaleString()}</td>
+                    <td><StatusBadge status={store.status} /></td>
+                    <td className="text-muted-foreground">{formatDate(store.createdAt)}</td>
+                    <td>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem><Eye className="h-4 w-4 mr-2" />View details</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </td>
+                  </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden divide-y divide-border">
+              {stores.map((store) => (
+                <div key={store.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {store.bannerImageUrl ? (
+                        <img src={store.bannerImageUrl} alt={store.name} className="w-12 h-12 rounded-lg object-cover shrink-0" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-muted flex items-center justify-center shrink-0">
+                          <StoreIcon className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-medium text-foreground truncate">{store.name}</p>
+                        <p className="text-xs text-muted-foreground line-clamp-1">{store.description}</p>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem><Eye className="h-4 w-4 mr-2" />View details</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <StatusBadge status={store.status} />
+                    {store.type && store.type.map((type) => (
+                      <span key={type} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize bg-primary/10 text-primary">{type}</span>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-xs text-muted-foreground">
+                    {store.location && (
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>{store.location.city}, {store.location.state}</span>
+                      </div>
                     )}
-                  </td>
-                  <td>
                     {store.rating ? (
                       <div className="flex items-center gap-1">
                         <Star className="h-3 w-3 fill-warning text-warning" />
-                        <span className="font-medium text-foreground">
-                          {store.rating.toFixed(1)}
-                        </span>
-                        <span className="text-xs text-muted-foreground mt-[1.5px]">
-                          ({store.reviewCount})
-                        </span>
+                        <span className="text-foreground font-medium">{store.rating.toFixed(1)}</span>
+                        <span>({store.reviewCount})</span>
                       </div>
-                    ) : (
-                      <span className="text-muted-foreground">No reviews</span>
-                    )}
-                  </td>
-                  <td className="text-muted-foreground">
-                    {store.viewCount.toLocaleString()}
-                  </td>
-                  <td>
-                    <StatusBadge status={store.status} />
-                  </td>
-                  <td className="text-muted-foreground">
-                    {formatDate(store.createdAt)}
-                  </td>
-                  <td>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="h-4 w-4 mr-2" />
-                          View details
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </td>
-                </tr>
-                ))}
-              </tbody>
-            </table>
+                    ) : null}
+                    <span>{store.viewCount.toLocaleString()} views</span>
+                    <span>{formatDate(store.createdAt)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
             
             {/* Pagination */}
             {paginationMeta && paginationMeta.totalPages > 1 && (
-              <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-                <div className="text-sm text-muted-foreground">
-                  Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                  {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                  {paginationMeta.total} stores
+              <div className="pagination-bar">
+                <div className="pagination-info">
+                  Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} stores
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={!paginationMeta.hasPrevPage || isLoading}
-                  >
-                    Previous
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    Page {paginationMeta.page} of {paginationMeta.totalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => p + 1)}
-                    disabled={!paginationMeta.hasNextPage || isLoading}
-                  >
-                    Next
-                  </Button>
+                <div className="pagination-controls">
+                  <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                  <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                  <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
                 </div>
               </div>
             )}

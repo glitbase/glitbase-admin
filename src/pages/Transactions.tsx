@@ -293,7 +293,8 @@ export default function TransactionsPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -311,43 +312,29 @@ export default function TransactionsPage() {
                 {transactions.map((transaction) => (
                   <tr key={transaction.id}>
                     <td>
-                      <span className="font-mono text-foreground text-sm">
-                        {transaction.transactionReference}
-                      </span>
+                      <span className="font-mono text-foreground text-sm">{transaction.transactionReference}</span>
                       {transaction.referenceNumber && (
-                        <p className="text-xs text-muted-foreground font-mono mt-0.5">
-                          {transaction.referenceNumber}
-                        </p>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{transaction.referenceNumber}</p>
                       )}
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
                         {getTypeIcon(transaction.type)}
-                        <span className={`font-medium capitalize ${getTypeColor(transaction.type)}`}>
-                          {transaction.type}
-                        </span>
+                        <span className={`font-medium capitalize ${getTypeColor(transaction.type)}`}>{transaction.type}</span>
                       </div>
                     </td>
                     <td>
                       {transaction.vendor ? (
                         <div className="flex items-center gap-2">
                           <Avatar className="h-8 w-8">
-                            <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                              {getInitials(transaction.vendor.name)}
-                            </AvatarFallback>
+                            <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(transaction.vendor.name)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="font-medium text-foreground">
-                              {transaction.vendor.name}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              {transaction.vendor.email}
-                            </p>
+                            <p className="font-medium text-foreground">{transaction.vendor.name}</p>
+                            <p className="text-xs text-muted-foreground">{transaction.vendor.email}</p>
                           </div>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      ) : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td>
                       <p className={`font-medium ${getTypeColor(transaction.type)}`}>
@@ -355,37 +342,18 @@ export default function TransactionsPage() {
                         {formatPrice(transaction.amount, transaction.currency)}
                       </p>
                     </td>
-                    <td>
-                      <span className="text-sm text-foreground capitalize">
-                        {transaction.category.replace(/_/g, " ")}
-                      </span>
-                    </td>
+                    <td><span className="text-sm text-foreground capitalize">{transaction.category.replace(/_/g, " ")}</span></td>
                     <td>
                       {transaction.referenceType ? (
-                        <span className="text-sm text-foreground capitalize">
-                          {transaction.referenceType}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                        <span className="text-sm text-foreground capitalize">{transaction.referenceType}</span>
+                      ) : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td>
-                      <p className="text-sm text-foreground">
-                        {formatDate(transaction.createdAt)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDateTime(transaction.createdAt).split(", ")[1]}
-                      </p>
+                      <p className="text-sm text-foreground">{formatDate(transaction.createdAt)}</p>
+                      <p className="text-xs text-muted-foreground">{formatDateTime(transaction.createdAt).split(", ")[1]}</p>
                     </td>
                     <td className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedTransaction(transaction);
-                          setIsSheetOpen(true);
-                        }}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedTransaction(transaction); setIsSheetOpen(true); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </td>
@@ -395,33 +363,51 @@ export default function TransactionsPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} transactions
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {transactions.map((transaction) => (
+              <div key={transaction.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-foreground truncate">{transaction.transactionReference}</p>
+                    {transaction.vendor && (
+                      <p className="font-medium text-foreground mt-1">{transaction.vendor.name}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground capitalize">{transaction.category.replace(/_/g, " ")}</p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedTransaction(transaction); setIsSheetOpen(true); }} className="shrink-0">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <div className="flex items-center gap-1">
+                    {getTypeIcon(transaction.type)}
+                    <span className={`text-xs font-medium capitalize ${getTypeColor(transaction.type)}`}>{transaction.type}</span>
+                  </div>
+                  {transaction.referenceType && (
+                    <span className="text-xs text-muted-foreground capitalize">{transaction.referenceType}</span>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className={`font-semibold text-sm ${getTypeColor(transaction.type)}`}>
+                    {transaction.type === "credit" ? "+" : transaction.type === "debit" ? "-" : ""}
+                    {formatPrice(transaction.amount, transaction.currency)}
+                  </span>
+                  <span className="text-muted-foreground">{formatDate(transaction.createdAt)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} transactions
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

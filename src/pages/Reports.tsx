@@ -252,7 +252,8 @@ export default function ReportsPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -270,82 +271,40 @@ export default function ReportsPage() {
                     <td>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(`${report.reporter.firstName} ${report.reporter.lastName}`)}
-                          </AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(`${report.reporter.firstName} ${report.reporter.lastName}`)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground text-sm">
-                            {report.reporter.firstName} {report.reporter.lastName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {report.reporter.email}
-                          </p>
+                          <p className="font-medium text-foreground text-sm">{report.reporter.firstName} {report.reporter.lastName}</p>
+                          <p className="text-xs text-muted-foreground">{report.reporter.email}</p>
                         </div>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
                         {getTypeIcon(report.type)}
-                        <span className="text-sm text-foreground capitalize">
-                          {report.type}
-                        </span>
+                        <span className="text-sm text-foreground capitalize">{report.type}</span>
                       </div>
                     </td>
                     <td>
-                      <div className="flex flex-col gap-0.5">
-                        <p className="text-sm text-foreground font-medium">
-                          {report.title}
-                        </p>
-                        {report.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {report.description}
-                          </p>
-                        )}
-                      </div>
+                      <p className="text-sm text-foreground font-medium">{report.title}</p>
+                      {report.description && <p className="text-xs text-muted-foreground line-clamp-1">{report.description}</p>}
                     </td>
-                    <td>
-                      <StatusBadge status={report.status} />
-                    </td>
+                    <td><StatusBadge status={report.status} /></td>
                     <td>
                       <p className="text-sm text-foreground">{formatDate(report.createdAt)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDateTime(report.createdAt).split(", ")[1]}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{formatDateTime(report.createdAt).split(", ")[1]}</p>
                     </td>
                     <td className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setIsSheetOpen(true);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
+                          <DropdownMenuItem onClick={() => { setSelectedReport(report); setIsSheetOpen(true); }} className="cursor-pointer">
+                            <Eye className="h-4 w-4 mr-2" />View
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setNewStatus(report.status);
-                              setReviewNote(report.reviewNote || "");
-                              setIsStatusDialogOpen(true);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Update Status
+                          <DropdownMenuItem onClick={() => { setSelectedReport(report); setNewStatus(report.status); setReviewNote(report.reviewNote || ""); setIsStatusDialogOpen(true); }} className="cursor-pointer">
+                            <Edit className="h-4 w-4 mr-2" />Update Status
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -356,33 +315,59 @@ export default function ReportsPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} reports
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {reports.map((report) => (
+              <div key={report.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(`${report.reporter.firstName} ${report.reporter.lastName}`)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground text-sm">{report.reporter.firstName} {report.reporter.lastName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{report.reporter.email}</p>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setSelectedReport(report); setIsSheetOpen(true); }} className="cursor-pointer">
+                        <Eye className="h-4 w-4 mr-2" />View
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setSelectedReport(report); setNewStatus(report.status); setReviewNote(report.reviewNote || ""); setIsStatusDialogOpen(true); }} className="cursor-pointer">
+                        <Edit className="h-4 w-4 mr-2" />Update Status
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-foreground">{report.title}</p>
+                  {report.description && <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{report.description}</p>}
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    {getTypeIcon(report.type)}
+                    <span className="text-xs text-muted-foreground capitalize">{report.type}</span>
+                  </div>
+                  <StatusBadge status={report.status} />
+                </div>
+                <p className="text-xs text-muted-foreground">{formatDate(report.createdAt)}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} reports
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

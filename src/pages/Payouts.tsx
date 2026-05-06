@@ -306,7 +306,8 @@ export default function PayoutsPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -323,83 +324,44 @@ export default function PayoutsPage() {
               <tbody>
                 {payouts.map((payout) => (
                   <tr key={payout.id}>
-                    <td>
-                      <span className="font-mono text-foreground text-sm">
-                        {payout.payoutReference}
-                      </span>
-                    </td>
+                    <td><span className="font-mono text-foreground text-sm">{payout.payoutReference}</span></td>
                     <td>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(payout.bankAccount.accountName)}
-                          </AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(payout.bankAccount.accountName)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground capitalize">
-                            {payout.bankAccount.accountName}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            Vendor ID: {payout.wallet.vendor.slice(0, 8)}...
-                          </p>
+                          <p className="font-medium text-foreground capitalize">{payout.bankAccount.accountName}</p>
+                          <p className="text-xs text-muted-foreground">Vendor ID: {payout.wallet.vendor.slice(0, 8)}...</p>
                         </div>
                       </div>
                     </td>
-                    <td>
-                      <p className="font-medium text-foreground">
-                        {formatPrice(payout.amount, payout.currency)}
-                      </p>
-                    </td>
-                    <td className="text-muted-foreground capitalize">
-                      {payout.payoutMethod.replace(/_/g, " ")}
-                    </td>
+                    <td><p className="font-medium text-foreground">{formatPrice(payout.amount, payout.currency)}</p></td>
+                    <td className="text-muted-foreground capitalize">{payout.payoutMethod.replace(/_/g, " ")}</td>
                     <td>
                       <div className="flex flex-col gap-0.5">
-                        <p className="text-sm text-foreground">
-                          {payout.bankAccount.accountName}
-                        </p>
-                        <p className="text-xs text-muted-foreground font-mono">
-                          {payout.bankAccount.accountNumber}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {payout.bankAccount.bankName}
-                        </p>
+                        <p className="text-sm text-foreground">{payout.bankAccount.accountName}</p>
+                        <p className="text-xs text-muted-foreground font-mono">{payout.bankAccount.accountNumber}</p>
+                        <p className="text-xs text-muted-foreground">{payout.bankAccount.bankName}</p>
                       </div>
                     </td>
-                    <td>
-                      <StatusBadge status={payout.status} />
-                    </td>
+                    <td><StatusBadge status={payout.status} /></td>
                     <td>
                       <p className="text-foreground">{formatDate(payout.requestedAt)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Requested
-                      </p>
+                      <p className="text-xs text-muted-foreground">Requested</p>
                     </td>
                     <td className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedPayout(payout);
-                              setIsSheetOpen(true);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
+                          <DropdownMenuItem onClick={() => { setSelectedPayout(payout); setIsSheetOpen(true); }} className="cursor-pointer">
+                            <Eye className="h-4 w-4 mr-2" />View
                           </DropdownMenuItem>
                           {payout.status === "pending_approval" && (
-                            <DropdownMenuItem
-                              onClick={() => handleApproveClick(payout)}
-                              className="cursor-pointer text-green-600 focus:text-green-600"
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-2" />
-                              Approve
+                            <DropdownMenuItem onClick={() => handleApproveClick(payout)} className="cursor-pointer text-green-600 focus:text-green-600">
+                              <CheckCircle2 className="h-4 w-4 mr-2" />Approve
                             </DropdownMenuItem>
                           )}
                         </DropdownMenuContent>
@@ -411,33 +373,53 @@ export default function PayoutsPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} payouts
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {payouts.map((payout) => (
+              <div key={payout.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-foreground truncate">{payout.payoutReference}</p>
+                    <p className="font-medium text-foreground capitalize mt-1">{payout.bankAccount.accountName}</p>
+                    <p className="text-xs text-muted-foreground">{payout.bankAccount.bankName}</p>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setSelectedPayout(payout); setIsSheetOpen(true); }} className="cursor-pointer">
+                        <Eye className="h-4 w-4 mr-2" />View
+                      </DropdownMenuItem>
+                      {payout.status === "pending_approval" && (
+                        <DropdownMenuItem onClick={() => handleApproveClick(payout)} className="cursor-pointer text-green-600 focus:text-green-600">
+                          <CheckCircle2 className="h-4 w-4 mr-2" />Approve
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <StatusBadge status={payout.status} />
+                  <span className="text-xs text-muted-foreground capitalize">{payout.payoutMethod.replace(/_/g, " ")}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-foreground text-sm">{formatPrice(payout.amount, payout.currency)}</span>
+                  <span className="text-muted-foreground">{formatDate(payout.requestedAt)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} payouts
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

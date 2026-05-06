@@ -543,7 +543,8 @@ export default function BookingsPage() {
         />
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -560,103 +561,54 @@ export default function BookingsPage() {
               <tbody>
                 {bookings.map((booking) => (
                   <tr key={booking.id}>
-                    <td>
-                      <p className="font-medium text-foreground">
-                        {booking.bookingReference}
-                      </p>
-                    </td>
+                    <td><p className="font-medium text-foreground">{booking.bookingReference}</p></td>
                     <td>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(booking.contactInfo.name)}
-                          </AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(booking.contactInfo.name)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground capitalize">
-                            {booking.contactInfo.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {booking.contactInfo.email}
-                          </p>
+                          <p className="font-medium text-foreground capitalize">{booking.contactInfo.name}</p>
+                          <p className="text-xs text-muted-foreground">{booking.contactInfo.email}</p>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <p className="font-medium text-foreground">
-                        {booking.store.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {booking.store.location?.city || "—"}
-                      </p>
+                      <p className="font-medium text-foreground">{booking.store.name}</p>
+                      <p className="text-xs text-muted-foreground">{booking.store.location?.city || "—"}</p>
                     </td>
-                    <td className="text-muted-foreground capitalize">
-                      {booking.serviceType}
-                    </td>
+                    <td className="text-muted-foreground capitalize">{booking.serviceType}</td>
                     <td>
                       <p className="text-foreground">{formatDate(booking.serviceDate)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {booking.serviceTime}
-                      </p>
+                      <p className="text-xs text-muted-foreground">{booking.serviceTime}</p>
                     </td>
                     <td>
-                      <p className="font-medium text-foreground">
-                        {formatPrice(booking.pricing.subtotal, booking.pricing.currency)}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Paid: {formatPrice(booking.pricing.amountPaid, booking.pricing.currency)}
-                      </p>
+                      <p className="font-medium text-foreground">{formatPrice(booking.pricing.subtotal, booking.pricing.currency)}</p>
+                      <p className="text-xs text-muted-foreground">Paid: {formatPrice(booking.pricing.amountPaid, booking.pricing.currency)}</p>
                     </td>
-                    <td>
-                      <StatusBadge status={booking.status} />
-                    </td>
+                    <td><StatusBadge status={booking.status} /></td>
                     <td className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            onClick={() => {
-                              setSelectedBooking(booking);
-                              setIsSheetOpen(true);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <Eye className="h-4 w-4 mr-2" />
-                            View
+                          <DropdownMenuItem onClick={() => { setSelectedBooking(booking); setIsSheetOpen(true); }} className="cursor-pointer">
+                            <Eye className="h-4 w-4 mr-2" />View
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleRefundClick(booking)}
-                            className="cursor-pointer"
-                          >
-                            <RotateCcw className="h-4 w-4 mr-2" />
-                            Process Refund
+                          <DropdownMenuItem onClick={() => handleRefundClick(booking)} className="cursor-pointer">
+                            <RotateCcw className="h-4 w-4 mr-2" />Process Refund
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleUpdateStatusClick(booking)}
-                            className="cursor-pointer"
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Update Status
+                          <DropdownMenuItem onClick={() => handleUpdateStatusClick(booking)} className="cursor-pointer">
+                            <Edit className="h-4 w-4 mr-2" />Update Status
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleResolveDisputeClick(booking)}
-                            className="cursor-pointer"
-                          >
-                            <Gavel className="h-4 w-4 mr-2" />
-                            Resolve Dispute
+                          <DropdownMenuItem onClick={() => handleResolveDisputeClick(booking)} className="cursor-pointer">
+                            <Gavel className="h-4 w-4 mr-2" />Resolve Dispute
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleCancelClick(booking)}
-                            className="cursor-pointer text-red-600 focus:text-red-600"
-                          >
-                            <XCircle className="h-4 w-4 mr-2" />
-                            Cancel Booking
+                          <DropdownMenuItem onClick={() => handleCancelClick(booking)} className="cursor-pointer text-red-600 focus:text-red-600">
+                            <XCircle className="h-4 w-4 mr-2" />Cancel Booking
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -667,33 +619,65 @@ export default function BookingsPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} bookings
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {bookings.map((booking) => (
+              <div key={booking.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-foreground">{booking.bookingReference}</p>
+                    <p className="font-medium text-foreground capitalize mt-0.5">{booking.contactInfo.name}</p>
+                    <p className="text-xs text-muted-foreground">{booking.store.name}</p>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setSelectedBooking(booking); setIsSheetOpen(true); }} className="cursor-pointer">
+                        <Eye className="h-4 w-4 mr-2" />View
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleRefundClick(booking)} className="cursor-pointer">
+                        <RotateCcw className="h-4 w-4 mr-2" />Process Refund
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleUpdateStatusClick(booking)} className="cursor-pointer">
+                        <Edit className="h-4 w-4 mr-2" />Update Status
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleResolveDisputeClick(booking)} className="cursor-pointer">
+                        <Gavel className="h-4 w-4 mr-2" />Resolve Dispute
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => handleCancelClick(booking)} className="cursor-pointer text-red-600 focus:text-red-600">
+                        <XCircle className="h-4 w-4 mr-2" />Cancel Booking
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <span className="capitalize">{booking.serviceType}</span>
+                  <span>{formatDate(booking.serviceDate)} {booking.serviceTime}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-foreground">{formatPrice(booking.pricing.subtotal, booking.pricing.currency)}</p>
+                    <p className="text-xs text-muted-foreground">Paid: {formatPrice(booking.pricing.amountPaid, booking.pricing.currency)}</p>
+                  </div>
+                  <StatusBadge status={booking.status} />
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} bookings
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

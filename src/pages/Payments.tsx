@@ -250,7 +250,8 @@ export default function PaymentsPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -268,9 +269,7 @@ export default function PaymentsPage() {
                 {payments.map((payment) => (
                   <tr key={payment.id}>
                     <td>
-                      <span className="font-mono text-foreground text-sm">
-                        {payment.paymentReference}
-                      </span>
+                      <span className="font-mono text-foreground text-sm">{payment.paymentReference}</span>
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
@@ -280,60 +279,30 @@ export default function PaymentsPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground capitalize">
-                            {payment.metadata?.contactInfo?.name || "Unknown"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {payment.metadata?.contactInfo?.email || "—"}
-                          </p>
+                          <p className="font-medium text-foreground capitalize">{payment.metadata?.contactInfo?.name || "Unknown"}</p>
+                          <p className="text-xs text-muted-foreground">{payment.metadata?.contactInfo?.email || "—"}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="text-muted-foreground capitalize">
-                      {payment.paymentType.replace(/_/g, " ")}
-                    </td>
+                    <td className="text-muted-foreground capitalize">{payment.paymentType.replace(/_/g, " ")}</td>
                     <td>
                       <div className="flex flex-col gap-0.5">
-                        <span className="capitalize text-foreground text-sm">
-                          {payment.paymentMethod.replace(/_/g, " ")}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          via {payment.paymentGateway}
-                        </span>
+                        <span className="capitalize text-foreground text-sm">{payment.paymentMethod.replace(/_/g, " ")}</span>
+                        <span className="text-xs text-muted-foreground">via {payment.paymentGateway}</span>
                       </div>
                     </td>
-                    <td>
-                      <p className="font-medium text-foreground">
-                        {formatPrice(payment.amount, payment.currency)}
-                      </p>
-                    </td>
-                    <td>
-                      <StatusBadge status={payment.status} />
-                    </td>
+                    <td><p className="font-medium text-foreground">{formatPrice(payment.amount, payment.currency)}</p></td>
+                    <td><StatusBadge status={payment.status} /></td>
                     <td>
                       {payment.paidAt ? (
                         <>
                           <p className="text-foreground">{formatDate(payment.paidAt)}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {new Date(payment.paidAt).toLocaleTimeString("en-GB", {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
+                          <p className="text-xs text-muted-foreground">{new Date(payment.paidAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}</p>
                         </>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      ) : <span className="text-muted-foreground">—</span>}
                     </td>
                     <td className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedPayment(payment);
-                          setIsSheetOpen(true);
-                        }}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedPayment(payment); setIsSheetOpen(true); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </td>
@@ -343,33 +312,42 @@ export default function PaymentsPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} payments
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {payments.map((payment) => (
+              <div key={payment.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-foreground truncate">{payment.paymentReference}</p>
+                    <p className="font-medium text-foreground capitalize mt-1">{payment.metadata?.contactInfo?.name || "Unknown"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{payment.metadata?.contactInfo?.email || "—"}</p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedPayment(payment); setIsSheetOpen(true); }} className="shrink-0">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 items-center">
+                  <StatusBadge status={payment.status} />
+                  <span className="text-xs text-muted-foreground capitalize">{payment.paymentType.replace(/_/g, " ")}</span>
+                  <span className="text-xs text-muted-foreground capitalize">{payment.paymentMethod.replace(/_/g, " ")}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-foreground text-sm">{formatPrice(payment.amount, payment.currency)}</span>
+                  <span className="text-muted-foreground">{payment.paidAt ? formatDate(payment.paidAt) : "—"}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} payments
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Eye, Crown, Calendar, User, CreditCard, Hash } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { MoreHorizontal, Crown, Calendar, User, CreditCard, Hash, Eye, PlayCircle, XCircle } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -11,19 +11,37 @@ import {
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { getSubscriptions, type GetSubscriptionsParams } from "@/services/subscriptionsApi";
+import { getSubscriptions, activateSubscription, endSubscription, type GetSubscriptionsParams } from "@/services/subscriptionsApi";
 import type { Subscription } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
 export default function SubscriptionsPage() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -32,6 +50,9 @@ export default function SubscriptionsPage() {
   const [page, setPage] = useState(1);
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isEndDialogOpen, setIsEndDialogOpen] = useState(false);
+  const [actionSubscription, setActionSubscription] = useState<Subscription | null>(null);
+  const [endReason, setEndReason] = useState("");
   const limit = 20;
   const { toast } = useToast();
 
@@ -130,6 +151,36 @@ export default function SubscriptionsPage() {
       });
     }
   }, [isError, error, toast]);
+
+  // Activate subscription mutation
+  const activateMutation = useMutation({
+    mutationFn: (subscriptionId: string) => activateSubscription(subscriptionId),
+    onSuccess: () => {
+      toast({ title: "Subscription activated", description: "The subscription has been activated successfully.", variant: "success" });
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Activation failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // End subscription mutation
+  const endMutation = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason?: string }) => endSubscription(id, reason),
+    onSuccess: () => {
+      toast({ title: "Subscription ended", description: "The subscription has been cancelled.", variant: "success" });
+      setIsEndDialogOpen(false);
+      setActionSubscription(null);
+      setEndReason("");
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Failed to end subscription", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const canActivate = (status: string) => ["trialing", "incomplete", "past_due", "canceled"].includes(status);
+  const canEnd = (status: string) => status !== "canceled";
 
   const statusOptions = [
     { value: "active", label: "Active" },
@@ -240,7 +291,8 @@ export default function SubscriptionsPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -259,43 +311,25 @@ export default function SubscriptionsPage() {
                     <td>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary/10 text-primary text-xs">
-                            {getInitials(subscription.user.name)}
-                          </AvatarFallback>
+                          <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(subscription.user.name)}</AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-medium text-foreground capitalize">
-                            {subscription.user.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {subscription.user.email}
-                          </p>
+                          <p className="font-medium text-foreground capitalize">{subscription.user.name}</p>
+                          <p className="text-xs text-muted-foreground">{subscription.user.email}</p>
                         </div>
                       </div>
                     </td>
                     <td>
-                      <p className="font-medium text-foreground">
-                        {subscription.plan.name}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        {subscription.subscriptionType === "monthly" ? "Monthly" : subscription.subscriptionType === "yearly" ? "Yearly" : subscription.subscriptionType}
-                      </p>
+                      <p className="font-medium text-foreground">{subscription.plan.name}</p>
+                      <p className="text-xs text-muted-foreground capitalize">{subscription.subscriptionType === "monthly" ? "Monthly" : subscription.subscriptionType === "yearly" ? "Yearly" : subscription.subscriptionType}</p>
                     </td>
                     <td>
-                      <p className="font-medium text-foreground">
-                        {formatPrice(subscription.amount, subscription.currency.toUpperCase())}
-                      </p>
-                      <p className="text-xs text-muted-foreground capitalize">
-                        per {subscription.subscriptionType === "monthly" ? "month" : subscription.subscriptionType === "yearly" ? "year" : subscription.subscriptionType}
-                      </p>
+                      <p className="font-medium text-foreground">{formatPrice(subscription.amount, subscription.currency.toUpperCase())}</p>
+                      <p className="text-xs text-muted-foreground capitalize">per {subscription.subscriptionType === "monthly" ? "month" : subscription.subscriptionType === "yearly" ? "year" : subscription.subscriptionType}</p>
                     </td>
+                    <td><StatusBadge status={subscription.status} /></td>
                     <td>
-                      <StatusBadge status={subscription.status} />
-                    </td>
-                    <td>
-                      <p className="text-sm text-foreground">
-                        {formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}
-                      </p>
+                      <p className="text-sm text-foreground">{formatDate(subscription.currentPeriodStart)} - {formatDate(subscription.currentPeriodEnd)}</p>
                     </td>
                     <td>
                       {subscription.cancelAtPeriodEnd ? (
@@ -305,16 +339,41 @@ export default function SubscriptionsPage() {
                       )}
                     </td>
                     <td className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedSubscription(subscription);
-                          setIsSheetOpen(true);
-                        }}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => { setSelectedSubscription(subscription); setIsSheetOpen(true); }}>
+                            <Eye className="h-4 w-4 mr-2" /> View
+                          </DropdownMenuItem>
+                          {canActivate(subscription.status) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => activateMutation.mutate(subscription.id)}
+                                disabled={activateMutation.isPending}
+                              >
+                                <PlayCircle className="h-4 w-4 mr-2 text-green-600" />
+                                <span className="text-green-600">Start Subscription</span>
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                          {canEnd(subscription.status) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => { setActionSubscription(subscription); setIsEndDialogOpen(true); }}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <XCircle className="h-4 w-4 mr-2" /> End Subscription
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))}
@@ -322,33 +381,84 @@ export default function SubscriptionsPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} subscriptions
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {subscriptions.map((subscription) => (
+              <div key={subscription.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarFallback className="bg-primary/10 text-primary text-xs">{getInitials(subscription.user.name)}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground capitalize truncate">{subscription.user.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{subscription.user.email}</p>
+                    </div>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="shrink-0">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => { setSelectedSubscription(subscription); setIsSheetOpen(true); }}>
+                        <Eye className="h-4 w-4 mr-2" /> View
+                      </DropdownMenuItem>
+                      {canActivate(subscription.status) && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => activateMutation.mutate(subscription.id)}
+                            disabled={activateMutation.isPending}
+                            className="cursor-pointer"
+                          >
+                            <PlayCircle className="h-4 w-4 mr-2 text-green-600" />
+                            <span className="text-green-600">Start Subscription</span>
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                      {canEnd(subscription.status) && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => { setActionSubscription(subscription); setIsEndDialogOpen(true); }}
+                            className="!cursor-pointer text-destructive focus:text-destructive"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" /> End Subscription
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{subscription.plan.name}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{subscription.subscriptionType === "monthly" ? "Monthly" : "Yearly"}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold text-foreground">{formatPrice(subscription.amount, subscription.currency.toUpperCase())}</p>
+                    <StatusBadge status={subscription.status} />
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  <span>{formatDate(subscription.currentPeriodStart)} – {formatDate(subscription.currentPeriodEnd)}</span>
+                  {subscription.cancelAtPeriodEnd && <span className="ml-2 text-destructive">Cancels at period end</span>}
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} subscriptions
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}
@@ -669,6 +779,42 @@ export default function SubscriptionsPage() {
           )}
         </SheetContent>
       </Sheet>
+
+      {/* End Subscription Confirmation Dialog */}
+      <Dialog open={isEndDialogOpen} onOpenChange={(open) => { setIsEndDialogOpen(open); if (!open) { setEndReason(""); setActionSubscription(null); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>End Subscription</DialogTitle>
+            <DialogDescription>
+              {actionSubscription && (
+                <>This will immediately cancel the subscription for <strong>{actionSubscription.user.name}</strong>. This action cannot be undone.</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="end-reason">Reason (optional)</Label>
+            <Textarea
+              id="end-reason"
+              placeholder="e.g. Non-payment after warning"
+              value={endReason}
+              onChange={(e) => setEndReason(e.target.value)}
+              rows={3}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setIsEndDialogOpen(false); setEndReason(""); setActionSubscription(null); }}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={endMutation.isPending}
+              onClick={() => { if (actionSubscription) endMutation.mutate({ id: actionSubscription.id, reason: endReason || undefined }); }}
+            >
+              {endMutation.isPending ? "Ending…" : "End Subscription"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

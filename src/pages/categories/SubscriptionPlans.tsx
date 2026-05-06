@@ -359,7 +359,7 @@ export default function SubscriptionPlansPage() {
           options={statusOptions}
           allLabel="All Statuses"
         />
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="ml-auto">
+        <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
           <Plus className="h-4 w-4 mr-2" />
           Create Plan
         </Button>
@@ -381,7 +381,8 @@ export default function SubscriptionPlansPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -398,33 +399,17 @@ export default function SubscriptionPlansPage() {
                 {plans.map((plan) => (
                   <tr key={plan.id}>
                     <td>
-                      <div className="flex flex-col gap-0.5">
-                        <p className="font-medium text-foreground">{plan.name}</p>
-                        {plan.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1">
-                            {plan.description}
-                          </p>
-                        )}
-                      </div>
+                      <p className="font-medium text-foreground">{plan.name}</p>
+                      {plan.description && <p className="text-xs text-muted-foreground line-clamp-1">{plan.description}</p>}
                     </td>
                     <td>
                       <div className="flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-foreground capitalize">
-                          {plan.type}
-                        </span>
+                        <span className="text-sm text-foreground capitalize">{plan.type}</span>
                       </div>
                     </td>
-                    <td>
-                      <p className="font-medium text-foreground">
-                        {formatPrice(plan.price, plan.currency)}
-                      </p>
-                    </td>
-                    <td>
-                      <span className="text-sm text-foreground">
-                        {plan.durationInMonths} {plan.durationInMonths === 1 ? "month" : "months"}
-                      </span>
-                    </td>
+                    <td><p className="font-medium text-foreground">{formatPrice(plan.price, plan.currency)}</p></td>
+                    <td><span className="text-sm text-foreground">{plan.durationInMonths} {plan.durationInMonths === 1 ? "month" : "months"}</span></td>
                     <td>
                       {plan.isActive ? (
                         <div className="flex items-center gap-1.5">
@@ -438,27 +423,18 @@ export default function SubscriptionPlansPage() {
                         </div>
                       )}
                     </td>
-                    <td>
-                      <p className="text-sm text-foreground">{formatDate(plan.createdAt)}</p>
-                    </td>
+                    <td><p className="text-sm text-foreground">{formatDate(plan.createdAt)}</p></td>
                     <td className="text-center">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
+                          <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => handleEdit(plan)} className="cursor-pointer">
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
+                            <Edit className="h-4 w-4 mr-2" />Edit
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => handleDeleteClick(plan)}
-                            className="text-destructive focus:text-destructive cursor-pointer"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete
+                          <DropdownMenuItem onClick={() => handleDeleteClick(plan)} className="text-destructive focus:text-destructive cursor-pointer">
+                            <Trash2 className="h-4 w-4 mr-2" />Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -469,33 +445,60 @@ export default function SubscriptionPlansPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} plans
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {plans.map((plan) => (
+              <div key={plan.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-medium text-foreground">{plan.name}</p>
+                    {plan.description && <p className="text-xs text-muted-foreground line-clamp-1">{plan.description}</p>}
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleEdit(plan)} className="cursor-pointer">
+                        <Edit className="h-4 w-4 mr-2" />Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDeleteClick(plan)} className="text-destructive focus:text-destructive cursor-pointer">
+                        <Trash2 className="h-4 w-4 mr-2" />Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-semibold text-foreground">{formatPrice(plan.price, plan.currency)}</p>
+                    <p className="text-xs text-muted-foreground capitalize">{plan.type} · {plan.durationInMonths} {plan.durationInMonths === 1 ? "month" : "months"}</p>
+                  </div>
+                  {plan.isActive ? (
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      <span className="text-sm text-green-600">Active</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <XCircle className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Inactive</span>
+                    </div>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">{formatDate(plan.createdAt)}</p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} plans
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

@@ -378,6 +378,26 @@ export interface Glit {
   updatedAt: Date;
 }
 
+export interface GlitfinderCategory {
+  id: string;
+  name: string;
+  description?: string;
+  imageUrl?: string;
+  icon?: string;
+  order: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface FAQ {
+  id: string;
+  question: string;
+  answer: string;
+  order: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export type TransactionType = "credit" | "debit" | "transfer";
 export type TransactionReferenceType = "booking" | "payment" | "payout";
 

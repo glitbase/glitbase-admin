@@ -57,3 +57,20 @@ export async function getSubscriptionById(id: string): Promise<IApiResponse<{ su
   return api.get<{ subscription: Subscription }>(`/subscriptions/${id}`);
 }
 
+/**
+ * Activate a subscription (works on trialing, incomplete, or past_due)
+ */
+export async function activateSubscription(subscriptionId: string): Promise<IApiResponse<{ subscription: Subscription }>> {
+  return api.patch<{ subscription: Subscription }>(`/subscriptions/admin/${subscriptionId}/activate`);
+}
+
+/**
+ * End (cancel) a subscription immediately
+ */
+export async function endSubscription(
+  subscriptionId: string,
+  reason?: string
+): Promise<IApiResponse<{ subscription: Subscription }>> {
+  return api.patch<{ subscription: Subscription }>(`/subscriptions/admin/${subscriptionId}/end`, reason ? { reason } : undefined);
+}
+

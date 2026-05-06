@@ -20,14 +20,14 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, description, action }: PageHeaderProps) {
   return (
-    <div className="page-header">
-      <div>
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between pb-4 border-b border-border mb-6">
+      <div className="min-w-0">
         <h1 className="page-title">{title}</h1>
         {description && (
           <p className="text-muted-foreground text-sm mt-1">{description}</p>
         )}
       </div>
-      {action}
+      {action && <div className="shrink-0">{action}</div>}
     </div>
   );
 }
@@ -50,7 +50,7 @@ export function SearchInput({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="pl-9 w-[240px]"
+        className="pl-9 w-full sm:w-[240px]"
       />
       {value && (
         <button
@@ -83,7 +83,7 @@ export function FilterSelect({
 }: FilterSelectProps) {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger className="w-[150px]">
+      <SelectTrigger className="w-full sm:w-[150px]">
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

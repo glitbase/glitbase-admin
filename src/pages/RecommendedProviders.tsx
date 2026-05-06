@@ -158,7 +158,7 @@ export default function RecommendedProvidersPage() {
           value={cityFilter}
           onChange={(e) => setCityFilter(e.target.value)}
           placeholder="City"
-          className="h-9 rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
+          className="h-9 w-full sm:w-[150px] rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
         />
       </div>
 
@@ -178,7 +178,8 @@ export default function RecommendedProvidersPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="overflow-x-auto">
+          {/* Desktop Table */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="data-table">
               <thead>
                 <tr>
@@ -197,58 +198,35 @@ export default function RecommendedProvidersPage() {
                     <td>
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-medium text-foreground">
-                          {provider.businessName}
-                        </span>
+                        <span className="font-medium text-foreground">{provider.businessName}</span>
                       </div>
                     </td>
-                    <td>
-                      <span className="text-sm text-foreground capitalize">
-                        {provider.businessType}
-                      </span>
-                    </td>
+                    <td><span className="text-sm text-foreground capitalize">{provider.businessType}</span></td>
                     <td>
                       <div className="flex items-center gap-2">
                         <Phone className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm text-foreground">
-                          {provider.contact}
-                        </span>
+                        <span className="text-sm text-foreground">{provider.contact}</span>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5 max-w-[200px]">
                         <MapPin className="h-3 w-3 text-muted-foreground shrink-0" />
-                        <span className="text-sm text-foreground truncate">
-                          {provider.location || provider.city}
-                        </span>
+                        <span className="text-sm text-foreground truncate">{provider.location || provider.city}</span>
                       </div>
                     </td>
                     <td>
                       {provider.reason ? (
-                        <span className="text-sm text-foreground max-w-[250px] block truncate">
-                          {provider.reason}
-                        </span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">—</span>
-                      )}
+                        <span className="text-sm text-foreground max-w-[250px] block truncate">{provider.reason}</span>
+                      ) : <span className="text-sm text-muted-foreground">—</span>}
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-sm text-foreground">
-                          {formatDate(provider.createdAt)}
-                        </span>
+                        <span className="text-sm text-foreground">{formatDate(provider.createdAt)}</span>
                       </div>
                     </td>
                     <td className="text-center">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedProvider(provider);
-                          setIsDialogOpen(true);
-                        }}
-                      >
+                      <Button variant="ghost" size="sm" onClick={() => { setSelectedProvider(provider); setIsDialogOpen(true); }}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </td>
@@ -258,33 +236,52 @@ export default function RecommendedProvidersPage() {
             </table>
           </div>
 
-          {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} providers
+          {/* Mobile Card View */}
+          <div className="md:hidden divide-y divide-border">
+            {providers.map((provider) => (
+              <div key={provider.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <p className="font-medium text-foreground">{provider.businessName}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground capitalize mt-0.5">{provider.businessType}</p>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedProvider(provider); setIsDialogOpen(true); }} className="shrink-0">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-1">
+                    <Phone className="h-3 w-3" />
+                    <span>{provider.contact}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    <span>{provider.location || provider.city}</span>
+                  </div>
+                </div>
+                {provider.reason && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">{provider.reason}</p>
+                )}
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <Calendar className="h-3 w-3" />
+                  <span>{formatDate(provider.createdAt)}</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+            ))}
+          </div>
+
+          {paginationMeta && paginationMeta.totalPages > 1 && (
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} providers
+              </div>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}

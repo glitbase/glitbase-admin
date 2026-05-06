@@ -421,7 +421,7 @@ export default function GlitFinderPage() {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {glits.map((glit) => (
               <div
                 key={glit.id}
@@ -566,32 +566,14 @@ export default function GlitFinderPage() {
 
           {/* Pagination */}
           {paginationMeta && paginationMeta.totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-              <div className="text-sm text-muted-foreground">
-                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1} to{" "}
-                {Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of{" "}
-                {paginationMeta.total} glits
+            <div className="pagination-bar">
+              <div className="pagination-info">
+                Showing {((paginationMeta.page - 1) * paginationMeta.limit) + 1}–{Math.min(paginationMeta.page * paginationMeta.limit, paginationMeta.total)} of {paginationMeta.total} glits
               </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={!paginationMeta.hasPrevPage || isLoading}
-                >
-                  Previous
-                </Button>
-                <span className="text-sm text-muted-foreground">
-                  Page {paginationMeta.page} of {paginationMeta.totalPages}
-                </span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => p + 1)}
-                  disabled={!paginationMeta.hasNextPage || isLoading}
-                >
-                  Next
-                </Button>
+              <div className="pagination-controls">
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={!paginationMeta.hasPrevPage || isLoading}>Previous</Button>
+                <span className="text-sm text-muted-foreground">Page {paginationMeta.page} of {paginationMeta.totalPages}</span>
+                <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={!paginationMeta.hasNextPage || isLoading}>Next</Button>
               </div>
             </div>
           )}
@@ -600,24 +582,24 @@ export default function GlitFinderPage() {
 
       {/* Glit Details Modal */}
       <Dialog open={!!selectedGlitId && !isDeleteDialogOpen} onOpenChange={(open) => !open && setSelectedGlitId(null)}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-hidden p-0 gap-0">
+        <DialogContent className="w-[95vw] max-w-5xl h-[92vh] max-h-[92vh] overflow-hidden p-0 gap-0">
           {isLoadingGlit ? (
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full overflow-hidden">
               {/* Header Skeleton */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border/50">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50 shrink-0">
                 <Skeleton className="h-6 w-32" />
               </div>
 
               {/* Content Skeleton */}
-              <div className="overflow-y-auto flex-1">
+              <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                   {/* Image Skeleton */}
-                  <div className="relative bg-gradient-to-br from-muted/30 via-muted/10 to-background min-h-[400px] lg:min-h-[600px] flex items-center justify-center p-6 border-r border-border/50">
+                  <div className="relative bg-gradient-to-br from-muted/30 via-muted/10 to-background min-h-[220px] sm:min-h-[320px] lg:min-h-[500px] flex items-center justify-center p-4 sm:p-6 lg:border-r border-b lg:border-b-0 border-border/50">
                     <Skeleton className="w-full max-w-[550px] aspect-square rounded-lg" />
                   </div>
 
                   {/* Details Skeleton */}
-                  <div className="p-6 space-y-5 bg-background">
+                  <div className="p-4 sm:p-6 space-y-5 bg-background">
                     {/* User Info Skeleton */}
                     <div className="flex items-start gap-3 pb-4 border-b border-dashed border-border/60">
                       <Skeleton className="h-12 w-12 rounded-full" />
@@ -662,14 +644,14 @@ export default function GlitFinderPage() {
               </div>
 
               {/* Footer Skeleton */}
-              <div className="flex items-center justify-end px-6 py-4 border-t border-border/50">
+              <div className="flex items-center justify-end px-4 sm:px-6 py-4 border-t border-border/50 shrink-0">
                 <Skeleton className="h-9 w-20" />
               </div>
             </div>
           ) : selectedGlit ? (
-            <div className="flex flex-col h-full">
+            <div className="flex flex-col h-full overflow-hidden">
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-4 border-b border-border/50 bg-card/50 backdrop-blur-sm">
+              <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
                 <DialogHeader className="flex-1">
                   <DialogTitle className="text-lg font-semibold flex items-center gap-2">
                     <div className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
@@ -679,24 +661,24 @@ export default function GlitFinderPage() {
               </div>
 
               {/* Content - Scrollable */}
-              <div className="overflow-y-auto flex-1">
+              <div className="overflow-y-auto flex-1 min-h-0">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                   {/* Image Section */}
                   {(selectedGlit.image || (selectedGlit.images && selectedGlit.images.length > 0)) && (
-                    <div className="relative bg-gradient-to-br from-muted/30 via-muted/10 to-background min-h-[400px] lg:min-h-[600px] flex items-center justify-center p-6 border-r border-border/50">
+                    <div className="relative bg-gradient-to-br from-muted/30 via-muted/10 to-background min-h-[220px] sm:min-h-[320px] lg:min-h-[500px] flex items-center justify-center p-4 sm:p-6 lg:border-r border-b lg:border-b-0 border-border/50">
                       <div className="relative w-full h-full flex items-center justify-center group">
                         <div className="absolute inset-0 bg-gradient-to-t from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                         <img
                           src={selectedGlit.image || selectedGlit.images?.[0]}
                           alt={selectedGlit.title || selectedGlit.description?.slice(0, 50)}
-                          className="max-w-full max-h-[550px] object-contain rounded-lg shadow-xl ring-2 ring-border/30 group-hover:ring-primary/20 transition-all"
+                          className="max-w-full max-h-[280px] sm:max-h-[400px] lg:max-h-[500px] object-contain rounded-lg shadow-xl ring-2 ring-border/30 group-hover:ring-primary/20 transition-all"
                         />
                       </div>
                     </div>
                   )}
 
                   {/* Details Section */}
-                  <div className="p-6 space-y-5 bg-background">
+                  <div className="p-4 sm:p-6 space-y-5 bg-background">
                     {/* User Info */}
                     <div 
                       className="flex items-start gap-3 pb-4 border-b border-dashed border-border/60 cursor-pointer hover:opacity-80 transition-opacity"
@@ -822,7 +804,7 @@ export default function GlitFinderPage() {
               </div>
 
               {/* Footer with Delete Button */}
-              <div className="flex items-center justify-end px-6 py-4 border-t border-border/50 bg-card/50 backdrop-blur-sm">
+              <div className="flex items-center justify-end px-4 sm:px-6 py-4 border-t border-border/50 bg-card/50 backdrop-blur-sm shrink-0">
                 <Button
                   variant="destructive"
                   size="sm"
