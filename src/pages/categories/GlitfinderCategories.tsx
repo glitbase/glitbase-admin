@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Compass, Plus, Edit, Trash2, GripVertical, ImageIcon } from "lucide-react";
+import { MoreHorizontal, Compass, Plus, Edit, Trash2, GripVertical, ImageIcon, X } from "lucide-react";
 import {
   PageHeader,
   EmptyState,
@@ -24,6 +24,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   getGlitfinderCategories,
   createGlitfinderCategory,
@@ -37,6 +43,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const emptyCreate: CreateGlitfinderCategoryPayload = {
   name: "",
+  subcategories: [],
   description: "",
   imageUrl: "",
   icon: "",
@@ -49,10 +56,12 @@ export default function GlitfinderCategoriesPage() {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateGlitfinderCategoryPayload>(emptyCreate);
+  const [subcategoryInput, setSubcategoryInput] = useState("");
 
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [editingCat, setEditingCat] = useState<GlitfinderCategory | null>(null);
   const [editForm, setEditForm] = useState<UpdateGlitfinderCategoryPayload>({});
+  const [editSubcategoryInput, setEditSubcategoryInput] = useState("");
 
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [deletingCat, setDeletingCat] = useState<GlitfinderCategory | null>(null);
@@ -63,10 +72,14 @@ export default function GlitfinderCategoriesPage() {
     retry: 1,
   });
 
-  const categories: GlitfinderCategory[] = (data?.data?.categories || []).map((c) => ({
-    ...c,
-    id: c.id || (c as any)._id,
-  }));
+  const categories: GlitfinderCategory[] = (data?.data?.categories || []).map((c) => {
+    const row = c as GlitfinderCategory & { _id?: string };
+    return {
+      ...c,
+      id: c.id || row._id || "",
+      subcategories: Array.isArray(c.subcategories) ? c.subcategories : [],
+    };
+  });
 
   useEffect(() => {
     if (isError) {
@@ -84,6 +97,7 @@ export default function GlitfinderCategoriesPage() {
       toast({ title: "Category created", variant: "success" });
       setIsCreateOpen(false);
       setCreateForm(emptyCreate);
+      setSubcategoryInput("");
       queryClient.invalidateQueries({ queryKey: ["glitfinder-categories"] });
     },
     onError: (err: Error) => {
@@ -99,6 +113,7 @@ export default function GlitfinderCategoriesPage() {
       setIsEditOpen(false);
       setEditingCat(null);
       setEditForm({});
+      setEditSubcategoryInput("");
       queryClient.invalidateQueries({ queryKey: ["glitfinder-categories"] });
     },
     onError: (err: Error) => {
@@ -119,12 +134,72 @@ export default function GlitfinderCategoriesPage() {
     },
   });
 
+  const addSubcategory = () => {
+    const trimmed = subcategoryInput.trim();
+    if (trimmed && !createForm.subcategories.includes(trimmed)) {
+      setCreateForm({
+        ...createForm,
+        subcategories: [...createForm.subcategories, trimmed],
+      });
+      setSubcategoryInput("");
+    }
+  };
+
+  const removeSubcategory = (index: number) => {
+    setCreateForm({
+      ...createForm,
+      subcategories: createForm.subcategories.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleSubcategoryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addSubcategory();
+    }
+  };
+
+  const addEditSubcategory = () => {
+    const trimmed = editSubcategoryInput.trim();
+    const current = editForm.subcategories || [];
+    if (trimmed && !current.includes(trimmed)) {
+      setEditForm({ ...editForm, subcategories: [...current, trimmed] });
+      setEditSubcategoryInput("");
+    }
+  };
+
+  const removeEditSubcategory = (index: number) => {
+    const current = editForm.subcategories || [];
+    setEditForm({
+      ...editForm,
+      subcategories: current.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleEditSubcategoryKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addEditSubcategory();
+    }
+  };
+
   const handleCreate = () => {
     if (!createForm.name.trim()) {
       toast({ title: "Validation", description: "Name is required", variant: "destructive" });
       return;
     }
-    const payload: CreateGlitfinderCategoryPayload = { name: createForm.name.trim() };
+    if (createForm.subcategories.length === 0) {
+      toast({
+        title: "Validation",
+        description: "At least one subcategory is required",
+        variant: "destructive",
+      });
+      return;
+    }
+    const payload: CreateGlitfinderCategoryPayload = {
+      name: createForm.name.trim(),
+      subcategories: createForm.subcategories,
+    };
     if (createForm.description?.trim()) payload.description = createForm.description.trim();
     if (createForm.imageUrl?.trim()) payload.imageUrl = createForm.imageUrl.trim();
     if (createForm.icon?.trim()) payload.icon = createForm.icon.trim();
@@ -140,7 +215,9 @@ export default function GlitfinderCategoriesPage() {
       imageUrl: cat.imageUrl ?? "",
       icon: cat.icon ?? "",
       order: cat.order,
+      subcategories: [...cat.subcategories],
     });
+    setEditSubcategoryInput("");
     setIsEditOpen(true);
   };
 
@@ -156,6 +233,12 @@ export default function GlitfinderCategoriesPage() {
     if ((editForm.imageUrl ?? "") !== (editingCat.imageUrl ?? "")) payload.imageUrl = editForm.imageUrl;
     if ((editForm.icon ?? "") !== (editingCat.icon ?? "")) payload.icon = editForm.icon;
     if (editForm.order !== editingCat.order) payload.order = editForm.order;
+    if (
+      editForm.subcategories !== undefined &&
+      JSON.stringify(editForm.subcategories) !== JSON.stringify(editingCat.subcategories)
+    ) {
+      payload.subcategories = editForm.subcategories;
+    }
 
     if (Object.keys(payload).length === 0) {
       toast({ title: "No changes", description: "Nothing was modified" });
@@ -200,7 +283,7 @@ export default function GlitfinderCategoriesPage() {
       </div>
 
       {isLoading ? (
-        <TableSkeleton columns={5} rows={8} />
+        <TableSkeleton columns={8} rows={8} />
       ) : categories.length === 0 ? (
         <div className="card">
           <EmptyState
@@ -220,6 +303,7 @@ export default function GlitfinderCategoriesPage() {
                   <th>Name</th>
                   <th>Icon</th>
                   <th>Description</th>
+                  <th>Subcategories</th>
                   <th>Order</th>
                   <th>Created</th>
                   <th className="text-center">Actions</th>
@@ -251,6 +335,35 @@ export default function GlitfinderCategoriesPage() {
                       <p className="text-sm text-muted-foreground max-w-xs line-clamp-2">
                         {cat.description || <span className="text-muted-foreground">—</span>}
                       </p>
+                    </td>
+                    <td>
+                      {cat.subcategories.length > 0 ? (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="text-sm text-foreground hover:text-primary cursor-pointer underline-offset-4 hover:underline"
+                            >
+                              {cat.subcategories.length}{" "}
+                              {cat.subcategories.length === 1 ? "subcategory" : "subcategories"}
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-64 p-3" align="start">
+                            <div className="space-y-2">
+                              <h4 className="text-sm font-semibold text-foreground mb-2">Subcategories</h4>
+                              <ul className="space-y-1">
+                                {cat.subcategories.map((sub, index) => (
+                                  <li key={index} className="text-sm text-muted-foreground">
+                                    • {sub}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          </PopoverContent>
+                        </Popover>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">No subcategories</span>
+                      )}
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5 text-sm text-foreground">
@@ -333,6 +446,16 @@ export default function GlitfinderCategoriesPage() {
                 {cat.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2">{cat.description}</p>
                 )}
+                <div className="flex items-center justify-between text-sm">
+                  {cat.subcategories.length > 0 ? (
+                    <span className="text-xs text-muted-foreground">
+                      {cat.subcategories.length}{" "}
+                      {cat.subcategories.length === 1 ? "subcategory" : "subcategories"}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">No subcategories</span>
+                  )}
+                </div>
                 <p className="text-xs text-muted-foreground">{formatDate(cat.createdAt)}</p>
               </div>
             ))}
@@ -341,8 +464,8 @@ export default function GlitfinderCategoriesPage() {
       )}
 
       {/* Create Dialog */}
-      <Dialog open={isCreateOpen} onOpenChange={(o) => { setIsCreateOpen(o); if (!o) setCreateForm(emptyCreate); }}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <Dialog open={isCreateOpen} onOpenChange={(o) => { setIsCreateOpen(o); if (!o) { setCreateForm(emptyCreate); setSubcategoryInput(""); } }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add Discovery Category</DialogTitle>
             <DialogDescription>Create a new Glitfinder discovery category</DialogDescription>
@@ -358,6 +481,51 @@ export default function GlitfinderCategoriesPage() {
                 onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
                 placeholder="e.g. Hair & Beauty"
               />
+            </div>
+            <div className="space-y-2">
+              <Label>
+                Subcategories <span className="text-destructive">*</span>
+              </Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={subcategoryInput}
+                    onChange={(e) => setSubcategoryInput(e.target.value)}
+                    onKeyDown={handleSubcategoryKeyDown}
+                    placeholder="Type subcategory and press Enter"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addSubcategory}
+                    disabled={!subcategoryInput.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {createForm.subcategories.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {createForm.subcategories.map((sub, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex items-center gap-1.5 pr-1 bg-gray-200 dark:bg-gray-700 text-foreground"
+                      >
+                        {sub}
+                        <button
+                          type="button"
+                          onClick={() => removeSubcategory(index)}
+                          className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">At least one subcategory is required</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="c-icon">Icon</Label>
@@ -401,7 +569,7 @@ export default function GlitfinderCategoriesPage() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setIsCreateOpen(false); setCreateForm(emptyCreate); }} disabled={createMutation.isPending}>
+            <Button variant="outline" onClick={() => { setIsCreateOpen(false); setCreateForm(emptyCreate); setSubcategoryInput(""); }} disabled={createMutation.isPending}>
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={createMutation.isPending}>
@@ -412,11 +580,11 @@ export default function GlitfinderCategoriesPage() {
       </Dialog>
 
       {/* Edit Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={(o) => { setIsEditOpen(o); if (!o) { setEditingCat(null); setEditForm({}); } }}>
-        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <Dialog open={isEditOpen} onOpenChange={(o) => { setIsEditOpen(o); if (!o) { setEditingCat(null); setEditForm({}); setEditSubcategoryInput(""); } }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
-            <DialogDescription>Update name, icon, image, description, or display order</DialogDescription>
+            <DialogDescription>Update name, subcategories, icon, image, description, or display order</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
@@ -426,6 +594,48 @@ export default function GlitfinderCategoriesPage() {
                 value={editForm.name ?? ""}
                 onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Subcategories</Label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={editSubcategoryInput}
+                    onChange={(e) => setEditSubcategoryInput(e.target.value)}
+                    onKeyDown={handleEditSubcategoryKeyDown}
+                    placeholder="Type subcategory and press Enter"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={addEditSubcategory}
+                    disabled={!editSubcategoryInput.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {(editForm.subcategories && editForm.subcategories.length > 0) && (
+                  <div className="flex flex-wrap gap-2">
+                    {editForm.subcategories.map((sub, index) => (
+                      <Badge
+                        key={index}
+                        variant="secondary"
+                        className="flex items-center gap-1.5 pr-1 bg-gray-200 dark:bg-gray-700 text-foreground"
+                      >
+                        {sub}
+                        <button
+                          type="button"
+                          onClick={() => removeEditSubcategory(index)}
+                          className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="e-icon">Icon</Label>
@@ -474,7 +684,7 @@ export default function GlitfinderCategoriesPage() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingCat(null); setEditForm({}); }} disabled={updateMutation.isPending}>
+            <Button variant="outline" onClick={() => { setIsEditOpen(false); setEditingCat(null); setEditForm({}); setEditSubcategoryInput(""); }} disabled={updateMutation.isPending}>
               Cancel
             </Button>
             <Button onClick={handleEditSubmit} disabled={updateMutation.isPending}>

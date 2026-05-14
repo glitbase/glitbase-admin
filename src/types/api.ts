@@ -385,6 +385,7 @@ export interface GlitfinderCategory {
   imageUrl?: string;
   icon?: string;
   order: number;
+  subcategories: string[];
   createdAt: Date;
   updatedAt: Date;
 }

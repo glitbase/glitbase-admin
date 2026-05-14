@@ -8,6 +8,7 @@ export interface GetGlitfinderCategoriesResponse {
 
 export interface CreateGlitfinderCategoryPayload {
   name: string;
+  subcategories: string[];
   description?: string;
   imageUrl?: string;
   icon?: string;
@@ -16,6 +17,7 @@ export interface CreateGlitfinderCategoryPayload {
 
 export interface UpdateGlitfinderCategoryPayload {
   name?: string;
+  subcategories?: string[];
   description?: string;
   imageUrl?: string;
   icon?: string;
