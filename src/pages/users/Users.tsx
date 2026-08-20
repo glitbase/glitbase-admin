@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MoreHorizontal, Mail, Eye, Users as UsersIcon, Download } from "lucide-react";
+import { MoreHorizontal, Mail, Eye, Users as UsersIcon, Download, UserPlus, Link2 } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -10,6 +10,7 @@ import {
   TableSkeleton,
 } from "@/components/shared/DataTable";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,10 +19,20 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getUsers, type GetUsersParams } from "@/services/usersApi";
-import type { User, UserRole } from "@/types/api";
+import type { User, AccountSource } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
+import { CreateUserSheet } from "@/components/users/CreateUserSheet";
+import {
+  CreateInviteSheet,
+  InviteLinkBanner,
+} from "@/components/users/CreateInviteSheet";
+import { InvitesPanel } from "@/components/users/InvitesPanel";
 
 export default function UsersPage() {
+  const [activeTab, setActiveTab] = useState("users");
+  const [createUserOpen, setCreateUserOpen] = useState(false);
+  const [createInviteOpen, setCreateInviteOpen] = useState(false);
+  const [pendingInviteUrl, setPendingInviteUrl] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
@@ -119,6 +130,28 @@ export default function UsersPage() {
     });
   };
 
+  const formatAccountSource = (source?: AccountSource) => {
+    switch (source) {
+      case "admin_created":
+        return "Admin created";
+      case "invite":
+        return "Invite";
+      case "self_registration":
+        return "Self registered";
+      default:
+        return "—";
+    }
+  };
+
+  const formatInvitedBy = (user: User) => {
+    if (!user.invitedBy) return "—";
+    const { firstName, lastName, email } = user.invitedBy;
+    if (firstName || lastName) {
+      return `${firstName ?? ""} ${lastName ?? ""}`.trim();
+    }
+    return email;
+  };
+
   const exportUsers = async () => {
     try {
       // Fetch all users for export (without pagination)
@@ -152,6 +185,8 @@ export default function UsersPage() {
         "Vendor Onboarding Status",
         "Subscription Type",
         "Subscription Active",
+        "Account Source",
+        "Invited By",
         "Joined Date",
       ];
 
@@ -172,6 +207,8 @@ export default function UsersPage() {
             user.vendorOnboardingStatus || "",
             user.subscriptionType || "",
             user.isSubscriptionActive ? "Yes" : "No",
+            formatAccountSource(user.accountSource),
+            formatInvitedBy(user),
             formatDate(user.createdAt instanceof Date ? user.createdAt : new Date(user.createdAt)),
           ]
             .map((field) => `"${String(field).replace(/"/g, '""')}"`)
@@ -208,42 +245,77 @@ export default function UsersPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Users"
-        description="Manage platform users, vendors, and administrators"
+        description="Manage accounts, onboard with invites, or create users directly"
         action={
-          <Button onClick={exportUsers} variant="outline" size="sm">
-            <Download className="h-4 w-4" />
-            Export
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {activeTab === "users" ? (
+              <>
+                <Button onClick={() => setCreateUserOpen(true)} size="sm">
+                  <UserPlus className="h-4 w-4" />
+                  Add user
+                </Button>
+                <Button onClick={exportUsers} variant="outline" size="sm">
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              </>
+            ) : (
+              <Button onClick={() => setCreateInviteOpen(true)} size="sm">
+                <Link2 className="h-4 w-4" />
+                New invite
+              </Button>
+            )}
+          </div>
         }
       />
 
-      <div className="filter-bar">
-        <SearchInput
-          value={search}
-          onChange={setSearch}
-          placeholder="Search users..."
+      {pendingInviteUrl && (
+        <InviteLinkBanner
+          url={pendingInviteUrl}
+          onDismiss={() => setPendingInviteUrl(null)}
         />
-        <FilterSelect
-          value={roleFilter}
-          onChange={setRoleFilter}
-          placeholder="Role"
-          options={roleOptions}
-          allLabel="All Roles"
-        />
-      </div>
+      )}
 
-      {isLoading ? (
-        <TableSkeleton columns={7} rows={10} />
-      ) : users.length === 0 ? (
-        <div className="card">
-          <EmptyState
-            title="No users found"
-            description="Try adjusting your search or filter criteria"
-            icon={<UsersIcon className="h-6 w-6" />}
-          />
-        </div>
-      ) : (
-          <div className="card">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="h-auto p-1 bg-muted/60">
+          <TabsTrigger value="users" className="gap-2 px-4 py-2">
+            <UsersIcon className="h-4 w-4" />
+            All users
+          </TabsTrigger>
+          <TabsTrigger value="invites" className="gap-2 px-4 py-2">
+            <Mail className="h-4 w-4" />
+            Invites
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="users" className="space-y-4 mt-0">
+          <div className="filter-bar">
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search users..."
+            />
+            <FilterSelect
+              value={roleFilter}
+              onChange={setRoleFilter}
+              placeholder="Role"
+              options={roleOptions}
+              allLabel="All Roles"
+            />
+          </div>
+
+          {isLoading ? (
+            <TableSkeleton columns={9} rows={10} />
+          ) : users.length === 0 ? (
+            <div className="card">
+              <EmptyState
+                title="No users found"
+                description="Try adjusting your search or filter criteria"
+                icon={<UsersIcon className="h-6 w-6" />}
+              />
+            </div>
+          ) : (
+            <div className="card">
             {/* Desktop Table */}
             <div className="hidden md:block overflow-x-auto">
               <table className="data-table">
@@ -251,6 +323,8 @@ export default function UsersPage() {
                   <tr>
                     <th>User</th>
                     <th>Role</th>
+                    <th>Source</th>
+                    <th>Invited by</th>
                     <th>Status</th>
                     <th>Subscription</th>
                     <th>Country</th>
@@ -290,6 +364,12 @@ export default function UsersPage() {
                       <span className="capitalize text-foreground">
                         {user.activeRole}
                       </span>
+                    </td>
+                    <td className="text-sm text-muted-foreground">
+                      {formatAccountSource(user.accountSource)}
+                    </td>
+                    <td className="text-sm text-muted-foreground">
+                      {formatInvitedBy(user)}
                     </td>
                     <td>
                       {user.vendorOnboardingStatus ? (
@@ -377,6 +457,11 @@ export default function UsersPage() {
                   </div>
                   <div className="flex flex-wrap gap-2 text-xs">
                     <span className="capitalize text-foreground bg-muted px-2 py-1 rounded">{user.activeRole}</span>
+                    {user.accountSource && (
+                      <span className="text-muted-foreground bg-muted px-2 py-1 rounded">
+                        {formatAccountSource(user.accountSource)}
+                      </span>
+                    )}
                     {user.vendorOnboardingStatus ? (
                       <StatusBadge status={user.vendorOnboardingStatus} />
                     ) : (
@@ -388,6 +473,7 @@ export default function UsersPage() {
                   </div>
                   <div className="flex items-center gap-4 text-xs text-muted-foreground">
                     {user.countryName && <span>{user.countryName}</span>}
+                    {user.invitedBy && <span>Invited by {formatInvitedBy(user)}</span>}
                     <span>Joined {formatDate(user.createdAt)}</span>
                   </div>
                 </div>
@@ -408,7 +494,23 @@ export default function UsersPage() {
               </div>
             )}
           </div>
-        )}
+          )}
+        </TabsContent>
+
+        <TabsContent value="invites" className="mt-0">
+          <InvitesPanel />
+        </TabsContent>
+      </Tabs>
+
+      <CreateUserSheet open={createUserOpen} onOpenChange={setCreateUserOpen} />
+      <CreateInviteSheet
+        open={createInviteOpen}
+        onOpenChange={setCreateInviteOpen}
+        onInviteUrlCreated={(url) => {
+          setPendingInviteUrl(url);
+          setActiveTab("invites");
+        }}
+      />
     </div>
   );
 }

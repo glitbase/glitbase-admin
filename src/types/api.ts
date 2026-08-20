@@ -17,6 +17,12 @@ export interface PaginationMeta {
 
 export type UserRole = "admin" | "vendor" | "customer";
 
+export type AccountSource = "self_registration" | "admin_created" | "invite";
+
+export type InviteRole = "customer" | "vendor";
+
+export type InviteStatus = "pending" | "accepted" | "expired" | "revoked";
+
 export type VendorOnboardingStatus = "pending" | "completed" | "approved" | "rejected";
 
 export type SubscriptionType = "none" | "commission" | "monthly" | "yearly";
@@ -35,6 +41,13 @@ export type ReportStatus = "pending" | "reviewing" | "resolved" | "dismissed";
 
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 
+export interface UserSummary {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+}
+
 export interface User {
   id: string;
   firstName?: string;
@@ -51,6 +64,34 @@ export interface User {
   vendorOnboardingStatus?: VendorOnboardingStatus;
   subscriptionType?: SubscriptionType;
   isSubscriptionActive?: boolean;
+  accountSource?: AccountSource;
+  invitedBy?: UserSummary;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface InviteMetadata {
+  storeName?: string;
+  countryName?: string;
+  countryCode?: string;
+  notes?: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+}
+
+export interface Invite {
+  id: string;
+  email?: string;
+  role: InviteRole;
+  status: InviteStatus;
+  expiresAt: Date;
+  usedCount: number;
+  maxUses: number;
+  invitedBy: UserSummary;
+  metadata?: InviteMetadata;
+  token?: string;
+  inviteUrl?: string;
   createdAt: Date;
   updatedAt: Date;
 }

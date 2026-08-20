@@ -115,6 +115,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       case "available":
       case "trialing":
       case "resolved":
+      case "accepted":
         return "approved";
       case "pending":
       case "pending_approval":
@@ -138,6 +139,8 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       case "incomplete_expired":
       case "unpaid":
       case "dismissed":
+      case "expired":
+      case "revoked":
         return "rejected";
       default:
         return "";
