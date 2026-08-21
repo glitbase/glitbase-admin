@@ -146,26 +146,86 @@ export interface Service {
   updatedAt: Date;
 }
 
+export interface StoreGalleryImage {
+  id: string;
+  imageURL: string;
+}
+
+export interface StoreFaq {
+  id: string;
+  question: string;
+  answer: string;
+}
+
+export interface StoreOpeningHour {
+  day: string;
+  isOpen: boolean;
+  openingTime: string;
+  closingTime: string;
+}
+
+export interface StorePolicies {
+  booking?: {
+    cancellation?: string;
+    rescheduling?: string;
+    homeServiceFee?: number;
+  };
+  payment?: {
+    depositType: "percentage" | "fixed";
+    amount: number;
+    lateFee?: number;
+  };
+  store?: {
+    refund?: string;
+    exchange?: string;
+    shipping?: string;
+  };
+}
+
+export interface StoreSetupProgress {
+  overallPercentage: number;
+  completedSteps: string[];
+  pendingSteps: string[];
+}
+
+export interface StoreOwner {
+  id: string;
+  name?: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+  phoneNumber?: string;
+  countryName?: string;
+  countryCode?: string;
+}
+
 export interface Store {
   id: string;
   name: string;
   description?: string;
-  owner: {
-    id: string;
-    name: string;
-    email: string;
-  };
+  owner: StoreOwner;
   type: ("physical" | "mobile")[];
   status: string;
+  isPublic: boolean;
+  rejectionReason?: string;
+  onboardingStatus?: string;
+  preferredCategories?: string[];
+  tags?: string[];
   location?: {
     address: string;
     city: string;
     state: string;
     zipcode: string;
-    coordinates: [number, number];
+    coordinates?: [number, number];
   };
+  openingHours?: StoreOpeningHour[];
+  maxBookingPerSlot?: number;
   bannerImageUrl?: string;
-  gallery: string[];
+  gallery?: Array<string | StoreGalleryImage>;
+  faqs?: StoreFaq[];
+  policies?: StorePolicies;
+  setupProgress?: StoreSetupProgress;
+  infoUpdateCount?: number;
   viewCount: number;
   rating?: number;
   reviewCount?: number;
