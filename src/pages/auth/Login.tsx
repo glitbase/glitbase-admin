@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import greenLogo from "@/assets/images/green-logo.svg";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -65,10 +66,10 @@ export default function Login() {
               <div className="flex items-center gap-3">
                 <div className="w-1 h-8 bg-primary rounded-full" />
                 <div>
-                  <img 
-                    src="https://res.cloudinary.com/giftguy/image/upload/v1765262899/glitbase_jlcbgl.png" 
-                    alt="Glitbase" 
-                    className="w-32 h-auto" 
+                  <img
+                    src={greenLogo}
+                    alt="Glitbase"
+                    className="h-10 w-auto"
                   />
                 </div>
               </div>
