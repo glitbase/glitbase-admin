@@ -116,6 +116,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       case "trialing":
       case "resolved":
       case "accepted":
+      case "published":
         return "approved";
       case "pending":
       case "pending_approval":
