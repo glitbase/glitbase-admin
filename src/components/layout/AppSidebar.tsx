@@ -45,6 +45,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import greenLogo from "@/assets/images/green-logo.svg";
 
 const mainNavItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -116,11 +117,11 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-sidebar-border px-4">
         <div className="flex items-center justify-center h-12">
           <img
-            src="https://res.cloudinary.com/giftguy/image/upload/v1765262899/glitbase_jlcbgl.png"
+            src={greenLogo}
             alt="Glitbase"
             className={cn(
               "shrink-0 object-contain",
-              collapsed ? "h-auto w-16" : "w-40 h-auto"
+              collapsed ? "h-8 w-8" : "h-10 w-auto"
             )}
           />
         </div>
