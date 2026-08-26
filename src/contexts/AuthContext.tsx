@@ -9,6 +9,7 @@ import { setAuthToken, setRefreshToken, removeAuthToken } from "@/services/baseQ
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isSuperAdmin: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -33,6 +34,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [accessToken, refreshToken]);
 
+  // Refresh profile on boot so isSuperAdmin is current
+  useEffect(() => {
+    if (isAuthenticated && accessToken) {
+      refreshUser();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await loginApi({ email, password });
@@ -50,6 +59,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Store tokens in localStorage for baseQuery
         setAuthToken(tokens.accessToken);
         setRefreshToken(tokens.refreshToken);
+
+        // Refresh profile so flags like mustChangePassword are current
+        try {
+          const profile = await getProfile();
+          if (profile.status && profile.data) {
+            dispatch(setUser(profile.data));
+          }
+        } catch {
+          // Login still succeeded; profile refresh can happen on dashboard load
+        }
         
         return true;
       }
@@ -93,7 +112,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, refreshUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated,
+        isSuperAdmin: Boolean(user?.isSuperAdmin),
+        login,
+        logout,
+        refreshUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

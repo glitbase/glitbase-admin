@@ -34,6 +34,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { getPayouts, approvePayout, type GetPayoutsParams, type ApprovePayoutPayload } from "@/services/payoutsApi";
+import { usePermissions } from "@/hooks/usePermissions";
 import type { Payout } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -53,6 +54,7 @@ export default function PayoutsPage() {
   const [approveNotes, setApproveNotes] = useState("");
   const limit = 20;
   const { toast } = useToast();
+  const { canApprovePayouts } = usePermissions();
 
   // Debounce search input
   useEffect(() => {
@@ -359,7 +361,7 @@ export default function PayoutsPage() {
                           <DropdownMenuItem onClick={() => { setSelectedPayout(payout); setIsSheetOpen(true); }} className="cursor-pointer">
                             <Eye className="h-4 w-4 mr-2" />View
                           </DropdownMenuItem>
-                          {payout.status === "pending_approval" && (
+                          {canApprovePayouts && payout.status === "pending_approval" && (
                             <DropdownMenuItem onClick={() => handleApproveClick(payout)} className="cursor-pointer text-green-600 focus:text-green-600">
                               <CheckCircle2 className="h-4 w-4 mr-2" />Approve
                             </DropdownMenuItem>
@@ -391,7 +393,7 @@ export default function PayoutsPage() {
                       <DropdownMenuItem onClick={() => { setSelectedPayout(payout); setIsSheetOpen(true); }} className="cursor-pointer">
                         <Eye className="h-4 w-4 mr-2" />View
                       </DropdownMenuItem>
-                      {payout.status === "pending_approval" && (
+                      {canApprovePayouts && payout.status === "pending_approval" && (
                         <DropdownMenuItem onClick={() => handleApproveClick(payout)} className="cursor-pointer text-green-600 focus:text-green-600">
                           <CheckCircle2 className="h-4 w-4 mr-2" />Approve
                         </DropdownMenuItem>

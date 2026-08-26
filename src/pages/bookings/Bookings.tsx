@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { MoreHorizontal, Calendar, Eye, XCircle, RotateCcw, Edit, Gavel } from "lucide-react";
 import {
   PageHeader,
@@ -55,7 +55,12 @@ import {
   type UpdateBookingStatusPayload,
   type ResolveDisputePayload,
 } from "@/services/bookingsApi";
-import type { Booking } from "@/types/api";
+import { getBookingProviderEmail, getBookingProviderName } from "@/lib/bookingUtils";
+import { middleTruncate } from "@/lib/utils";
+import { normalizeStoreFromApi } from "@/lib/storeUtils";
+import { getStoreById } from "@/services/storesApi";
+import { usePermissions } from "@/hooks/usePermissions";
+import type { Booking, Store, StoreOwner } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
@@ -105,6 +110,7 @@ export default function BookingsPage() {
   
   const limit = 20;
   const { toast } = useToast();
+  const { canProcessRefunds, canResolveDisputes } = usePermissions();
 
   // Debounce search input
   useEffect(() => {
@@ -171,6 +177,36 @@ export default function BookingsPage() {
       updatedAt: new Date(booking.updatedAt),
     }));
   }, [bookingsResponse?.data?.bookings]);
+
+  const storeIds = useMemo(
+    () => [...new Set(bookings.map((booking) => booking.store?.id).filter(Boolean))],
+    [bookings]
+  );
+
+  const storeOwnerQueries = useQueries({
+    queries: storeIds.map((storeId) => ({
+      queryKey: ["booking-store-owner", storeId],
+      queryFn: () => getStoreById(storeId),
+      staleTime: 5 * 60 * 1000,
+      enabled: Boolean(storeId),
+    })),
+  });
+
+  const storeOwnersByStoreId = useMemo(() => {
+    const map = new Map<string, StoreOwner>();
+
+    storeIds.forEach((storeId, index) => {
+      const store = storeOwnerQueries[index]?.data?.data?.store;
+      if (!store?.owner?.email) return;
+
+      map.set(
+        storeId,
+        normalizeStoreFromApi(store as Store & { _id?: string }).owner
+      );
+    });
+
+    return map;
+  }, [storeIds, storeOwnerQueries]);
 
   // Handle pagination meta (API returns totalDocs instead of total)
   const paginationMeta = useMemo(() => {
@@ -530,7 +566,7 @@ export default function BookingsPage() {
       </div>
 
       {isLoading ? (
-        <TableSkeleton columns={8} rows={10} />
+        <TableSkeleton columns={9} rows={10} />
       ) : bookings.length === 0 ? (
         <EmptyState
           icon={<Calendar className="h-12 w-12" />}
@@ -548,8 +584,10 @@ export default function BookingsPage() {
             <table className="data-table">
               <thead>
                 <tr>
+                  <th>ID</th>
                   <th>Reference</th>
                   <th>Customer</th>
+                  <th>Provider</th>
                   <th>Store</th>
                   <th>Service Type</th>
                   <th>Service Date</th>
@@ -561,7 +599,19 @@ export default function BookingsPage() {
               <tbody>
                 {bookings.map((booking) => (
                   <tr key={booking.id}>
-                    <td><p className="font-medium text-foreground">{booking.bookingReference}</p></td>
+                    <td>
+                      <p className="font-mono text-sm font-medium text-foreground">
+                        {booking.gId ?? "—"}
+                      </p>
+                    </td>
+                    <td>
+                      <p
+                        className="font-mono text-xs text-muted-foreground max-w-[120px]"
+                        title={booking.bookingReference}
+                      >
+                        {middleTruncate(booking.bookingReference)}
+                      </p>
+                    </td>
                     <td>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-8 w-8">
@@ -572,6 +622,10 @@ export default function BookingsPage() {
                           <p className="text-xs text-muted-foreground">{booking.contactInfo.email}</p>
                         </div>
                       </div>
+                    </td>
+                    <td>
+                      <p className="font-medium text-foreground">{getBookingProviderName(booking, storeOwnersByStoreId)}</p>
+                      <p className="text-xs text-muted-foreground">{getBookingProviderEmail(booking, storeOwnersByStoreId)}</p>
                     </td>
                     <td>
                       <p className="font-medium text-foreground">{booking.store.name}</p>
@@ -596,16 +650,20 @@ export default function BookingsPage() {
                           <DropdownMenuItem onClick={() => { setSelectedBooking(booking); setIsSheetOpen(true); }} className="cursor-pointer">
                             <Eye className="h-4 w-4 mr-2" />View
                           </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem onClick={() => handleRefundClick(booking)} className="cursor-pointer">
-                            <RotateCcw className="h-4 w-4 mr-2" />Process Refund
-                          </DropdownMenuItem>
+                          {(canProcessRefunds || canResolveDisputes) && <DropdownMenuSeparator />}
+                          {canProcessRefunds && (
+                            <DropdownMenuItem onClick={() => handleRefundClick(booking)} className="cursor-pointer">
+                              <RotateCcw className="h-4 w-4 mr-2" />Process Refund
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem onClick={() => handleUpdateStatusClick(booking)} className="cursor-pointer">
                             <Edit className="h-4 w-4 mr-2" />Update Status
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleResolveDisputeClick(booking)} className="cursor-pointer">
-                            <Gavel className="h-4 w-4 mr-2" />Resolve Dispute
-                          </DropdownMenuItem>
+                          {canResolveDisputes && (
+                            <DropdownMenuItem onClick={() => handleResolveDisputeClick(booking)} className="cursor-pointer">
+                              <Gavel className="h-4 w-4 mr-2" />Resolve Dispute
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem onClick={() => handleCancelClick(booking)} className="cursor-pointer text-red-600 focus:text-red-600">
                             <XCircle className="h-4 w-4 mr-2" />Cancel Booking
@@ -625,8 +683,18 @@ export default function BookingsPage() {
               <div key={booking.id} className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-mono text-xs text-foreground">{booking.bookingReference}</p>
+                    <p className="font-mono text-sm font-medium text-foreground">{booking.gId ?? "—"}</p>
+                    <p
+                      className="font-mono text-xs text-muted-foreground mt-0.5"
+                      title={booking.bookingReference}
+                    >
+                      {middleTruncate(booking.bookingReference)}
+                    </p>
                     <p className="font-medium text-foreground capitalize mt-0.5">{booking.contactInfo.name}</p>
+                    <p className="text-xs text-muted-foreground">{booking.contactInfo.email}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Provider: {getBookingProviderName(booking, storeOwnersByStoreId)} · {getBookingProviderEmail(booking, storeOwnersByStoreId)}
+                    </p>
                     <p className="text-xs text-muted-foreground">{booking.store.name}</p>
                   </div>
                   <DropdownMenu>
@@ -637,16 +705,20 @@ export default function BookingsPage() {
                       <DropdownMenuItem onClick={() => { setSelectedBooking(booking); setIsSheetOpen(true); }} className="cursor-pointer">
                         <Eye className="h-4 w-4 mr-2" />View
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleRefundClick(booking)} className="cursor-pointer">
-                        <RotateCcw className="h-4 w-4 mr-2" />Process Refund
-                      </DropdownMenuItem>
+                      {(canProcessRefunds || canResolveDisputes) && <DropdownMenuSeparator />}
+                      {canProcessRefunds && (
+                        <DropdownMenuItem onClick={() => handleRefundClick(booking)} className="cursor-pointer">
+                          <RotateCcw className="h-4 w-4 mr-2" />Process Refund
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuItem onClick={() => handleUpdateStatusClick(booking)} className="cursor-pointer">
                         <Edit className="h-4 w-4 mr-2" />Update Status
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleResolveDisputeClick(booking)} className="cursor-pointer">
-                        <Gavel className="h-4 w-4 mr-2" />Resolve Dispute
-                      </DropdownMenuItem>
+                      {canResolveDisputes && (
+                        <DropdownMenuItem onClick={() => handleResolveDisputeClick(booking)} className="cursor-pointer">
+                          <Gavel className="h-4 w-4 mr-2" />Resolve Dispute
+                        </DropdownMenuItem>
+                      )}
                       <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => handleCancelClick(booking)} className="cursor-pointer text-red-600 focus:text-red-600">
                         <XCircle className="h-4 w-4 mr-2" />Cancel Booking
@@ -709,15 +781,23 @@ export default function BookingsPage() {
                       Booking ID
                     </label>
                     <p className="text-sm font-mono font-medium text-foreground">
-                      {selectedBooking.id}
+                      {selectedBooking.gId ?? "—"}
                     </p>
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">
                       Booking Reference
                     </label>
-                    <p className="text-sm font-mono text-foreground">
+                    <p className="text-sm font-mono text-foreground break-all">
                       {selectedBooking.bookingReference}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Internal ID
+                    </label>
+                    <p className="text-sm font-mono text-muted-foreground break-all">
+                      {selectedBooking.id}
                     </p>
                   </div>
                 </div>
@@ -759,6 +839,31 @@ export default function BookingsPage() {
                     </label>
                     <p className="text-sm text-foreground">
                       {selectedBooking.contactInfo.phoneNumber}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Provider Information */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-foreground border-b border-border pb-2">
+                  Provider Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Name
+                    </label>
+                    <p className="text-sm font-medium text-foreground">
+                      {getBookingProviderName(selectedBooking, storeOwnersByStoreId)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Email
+                    </label>
+                    <p className="text-sm text-foreground">
+                      {getBookingProviderEmail(selectedBooking, storeOwnersByStoreId)}
                     </p>
                   </div>
                 </div>

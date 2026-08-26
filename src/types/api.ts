@@ -13,6 +13,10 @@ export interface PaginationMeta {
   totalPages: number;
   hasNextPage: boolean;
   hasPrevPage: boolean;
+  totalDocs?: number;
+  hasPreviousPage?: boolean;
+  nextPage?: number | null;
+  previousPage?: number | null;
 }
 
 export type UserRole = "admin" | "vendor" | "customer";
@@ -41,6 +45,8 @@ export type ReportStatus = "pending" | "reviewing" | "resolved" | "dismissed";
 
 export type ApprovalStatus = "pending" | "approved" | "rejected";
 
+export type ServiceType = "normal" | "home" | "pickDrop";
+
 export interface UserSummary {
   id: string;
   firstName?: string;
@@ -57,6 +63,9 @@ export interface User {
   profileImageUrl?: string;
   roles: UserRole[];
   activeRole: UserRole;
+  isSuperAdmin?: boolean;
+  isDefaultAdmin?: boolean;
+  mustChangePassword?: boolean;
   isEmailVerified: boolean;
   isPhoneNumberVerified: boolean;
   countryName?: string;
@@ -68,6 +77,20 @@ export interface User {
   invitedBy?: UserSummary;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface AdminTeamMember {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber?: string;
+  isSuperAdmin: boolean;
+  mustChangePassword?: boolean;
+  accountSource?: AccountSource;
+  invitedBy?: UserSummary;
+  createdAt: Date;
+  updatedAt?: Date;
 }
 
 export interface InviteMetadata {
@@ -129,6 +152,8 @@ export interface Service {
   imageUrl?: string;
   images: string[];
   category: string;
+  subcategory?: string;
+  type?: ServiceType[];
   store: {
     id: string;
     name: string;
@@ -235,12 +260,15 @@ export interface Store {
 
 export interface Booking {
   id: string;
+  gId?: string;
   bookingReference: string;
   user: string; // User ID
+  vendor?: Pick<StoreOwner, "id" | "firstName" | "lastName" | "email" | "name">;
   store: {
     id: string;
     name: string;
     bannerImageUrl?: string;
+    owner?: Pick<StoreOwner, "id" | "firstName" | "lastName" | "email" | "name">;
     location?: {
       name: string;
       address: string;
@@ -526,6 +554,77 @@ export interface Transaction {
     name: string;
     email: string;
   };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type AnnouncementType = "announcement" | "update" | "promotion";
+export type AnnouncementAudience = "customers" | "providers";
+export type AnnouncementChannel = "email" | "in_app" | "push";
+export type AnnouncementStatus = "sending" | "sent" | "failed";
+
+export interface AnnouncementDeliveryStats {
+  attempted: number;
+  succeeded: number;
+  failed: number;
+}
+
+export interface AnnouncementDeliverySummary {
+  email: AnnouncementDeliveryStats;
+  inApp: AnnouncementDeliveryStats;
+  push: AnnouncementDeliveryStats;
+}
+
+export interface AnnouncementSender {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  body: string;
+  type: AnnouncementType;
+  audience: AnnouncementAudience[];
+  channels: AnnouncementChannel[];
+  imageUrl?: string;
+  actionUrl?: string;
+  status: AnnouncementStatus;
+  sentBy: AnnouncementSender | string;
+  recipientCount: number;
+  deliveryStats: AnnouncementDeliverySummary;
+  sentAt?: Date;
+  failureReason?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export type FeaturedStorePlacement = "marketplace" | "homepage";
+export type FeaturedStoreSource = "admin" | "paid";
+
+export interface FeaturedStoreAdminUser {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email: string;
+}
+
+export interface FeaturedStoreEntry {
+  id: string;
+  store: Pick<
+    Store,
+    "id" | "name" | "bannerImageUrl" | "rating" | "reviewCount" | "location" | "isPublic"
+  > & { id: string };
+  placement: FeaturedStorePlacement;
+  displayOrder: number;
+  isActive: boolean;
+  note?: string;
+  source: FeaturedStoreSource;
+  featuredBy: FeaturedStoreAdminUser | string;
+  startsAt?: Date;
+  endsAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }

@@ -1,6 +1,7 @@
 import { Outlet, useLocation, NavLink, Navigate } from "react-router-dom";
 import { Store, Sparkles, Crown, HelpCircle, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const categorySubItems = [
   { title: "Marketplace Categories", url: "/categories/marketplace", icon: Store },
@@ -12,6 +13,7 @@ const categorySubItems = [
 
 export function CategoriesLayout() {
   const location = useLocation();
+  const { canManageApplicationData } = usePermissions();
 
   const isActive = (path: string) => {
     if (path === "/categories/marketplace") {
@@ -76,7 +78,12 @@ export function CategoriesLayout() {
 
       {/* Main content */}
       <div className="flex-1 min-w-0 pt-3 md:pt-0">
-        <Outlet />
+        {!canManageApplicationData && (
+          <div className="mb-4 mx-3 md:mx-0 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+            Read-only view. Super admin access is required to create or edit application data.
+          </div>
+        )}
+        <Outlet context={{ canManageApplicationData }} />
       </div>
     </div>
   );

@@ -37,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { getMarketplaceCategories, createMarketplaceCategory, updateMarketplaceCategory, deleteMarketplaceCategory, type GetMarketplaceCategoriesParams, type CreateMarketplaceCategoryPayload, type UpdateMarketplaceCategoryPayload } from "@/services/marketplaceCategoriesApi";
 import type { MarketplaceCategory } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -54,6 +55,7 @@ export default function MarketplaceCategoriesPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
   const { toast } = useToast();
+  const { canManageApplicationData } = usePermissions();
   
   // Create dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -479,10 +481,12 @@ export default function MarketplaceCategoriesPage() {
           options={typeOptions}
           allLabel="All Types"
         />
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Category
-        </Button>
+        {canManageApplicationData && (
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Category
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -575,12 +579,16 @@ export default function MarketplaceCategoriesPage() {
                           <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
-                            <Edit className="h-4 w-4 mr-2" />Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
-                            <Trash2 className="h-4 w-4 mr-2" />Delete
-                          </DropdownMenuItem>
+                          {canManageApplicationData && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
+                                <Edit className="h-4 w-4 mr-2" />Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
+                                <Trash2 className="h-4 w-4 mr-2" />Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -615,12 +623,16 @@ export default function MarketplaceCategoriesPage() {
                       <Button variant="ghost" size="sm" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
-                        <Edit className="h-4 w-4 mr-2" />Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
-                        <Trash2 className="h-4 w-4 mr-2" />Delete
-                      </DropdownMenuItem>
+                      {canManageApplicationData && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
+                            <Edit className="h-4 w-4 mr-2" />Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
+                            <Trash2 className="h-4 w-4 mr-2" />Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
