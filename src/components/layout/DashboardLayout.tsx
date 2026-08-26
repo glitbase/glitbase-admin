@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
+import { ChangePasswordRequired } from "@/components/auth/ChangePasswordRequired";
 
 export function DashboardLayout() {
   const { isAuthenticated, user, logout } = useAuth();
@@ -19,6 +20,8 @@ export function DashboardLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  const mustChangePassword = Boolean(user?.mustChangePassword);
+
   const handleLogout = () => {
     logout();
     navigate("/login");
@@ -26,6 +29,7 @@ export function DashboardLayout() {
 
   return (
     <SidebarProvider>
+      <ChangePasswordRequired open={mustChangePassword} />
       <div className="min-h-screen flex w-full bg-sidebar dark:bg-background">
         <AppSidebar />
         
@@ -79,7 +83,11 @@ export function DashboardLayout() {
             </div>
           </header>
 
-          <main className="flex-1 p-3 sm:p-6 overflow-auto bg-background h-64">
+          <main
+            className={`flex-1 p-3 sm:p-6 overflow-auto bg-background h-64 ${
+              mustChangePassword ? "pointer-events-none select-none blur-sm" : ""
+            }`}
+          >
             <Outlet />
           </main>
         </div>

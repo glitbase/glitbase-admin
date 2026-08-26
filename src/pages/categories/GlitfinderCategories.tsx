@@ -40,6 +40,7 @@ import {
 } from "@/services/glitfinderCategoriesApi";
 import type { GlitfinderCategory } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const emptyCreate: CreateGlitfinderCategoryPayload = {
   name: "",
@@ -53,6 +54,7 @@ const emptyCreate: CreateGlitfinderCategoryPayload = {
 export default function GlitfinderCategoriesPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { canManageApplicationData } = usePermissions();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<CreateGlitfinderCategoryPayload>(emptyCreate);
@@ -276,10 +278,12 @@ export default function GlitfinderCategoriesPage() {
       />
 
       <div className="filter-bar">
-        <Button onClick={() => setIsCreateOpen(true)} className="sm:ml-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Add Category
-        </Button>
+        {canManageApplicationData && (
+          <Button onClick={() => setIsCreateOpen(true)} className="sm:ml-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Add Category
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -382,15 +386,19 @@ export default function GlitfinderCategoriesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(cat)}>
-                            <Edit className="h-4 w-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => { setDeletingCat(cat); setIsDeleteOpen(true); }}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" /> Delete
-                          </DropdownMenuItem>
+                          {canManageApplicationData && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleEdit(cat)}>
+                                <Edit className="h-4 w-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => { setDeletingCat(cat); setIsDeleteOpen(true); }}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -431,15 +439,19 @@ export default function GlitfinderCategoriesPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(cat)}>
-                        <Edit className="h-4 w-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => { setDeletingCat(cat); setIsDeleteOpen(true); }}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
+                      {canManageApplicationData && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleEdit(cat)}>
+                            <Edit className="h-4 w-4 mr-2" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => { setDeletingCat(cat); setIsDeleteOpen(true); }}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

@@ -28,6 +28,9 @@ import GlitfinderCategoriesPage from "@/pages/categories/GlitfinderCategories";
 import ReportsPage from "@/pages/Reports";
 import RecommendedProvidersPage from "@/pages/RecommendedProviders";
 import GlitFinderPage from "@/pages/GlitFinder";
+import AnnouncementsPage from "@/pages/announcements/Announcements";
+import AdminTeamPage from "@/pages/admins/AdminTeam";
+import { SuperAdminRoute } from "@/components/auth/SuperAdminRoute";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -63,6 +66,15 @@ const App = () => (
                   <Route path="glitfinder-categories" element={<GlitfinderCategoriesPage />} />
                 </Route>
                 <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/announcements" element={<AnnouncementsPage />} />
+                <Route
+                  path="/admin-team"
+                  element={
+                    <SuperAdminRoute>
+                      <AdminTeamPage />
+                    </SuperAdminRoute>
+                  }
+                />
                 <Route path="/recommended-providers" element={<RecommendedProvidersPage />} />
                 <Route path="/glitfinder" element={<GlitFinderPage />} />
               </Route>

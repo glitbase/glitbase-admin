@@ -21,6 +21,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { getUsers, type GetUsersParams } from "@/services/usersApi";
 import type { User, AccountSource } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
+import { normalizePaginationMeta } from "@/lib/paginationUtils";
 import { CreateUserSheet } from "@/components/users/CreateUserSheet";
 import {
   CreateInviteSheet,
@@ -97,7 +98,10 @@ export default function UsersPage() {
     }));
   }, [usersResponse?.data?.users]);
 
-  const paginationMeta = usersResponse?.data?.meta;
+  const paginationMeta = useMemo(
+    () => normalizePaginationMeta(usersResponse?.data?.meta, limit),
+    [usersResponse?.data?.meta, limit]
+  );
 
   // Handle errors
   useEffect(() => {

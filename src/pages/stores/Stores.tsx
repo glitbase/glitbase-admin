@@ -1,6 +1,17 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Eye, Store as StoreIcon, MapPin, Star, Check, X, Ban } from "lucide-react";
+import {
+  MoreHorizontal,
+  Eye,
+  Store as StoreIcon,
+  MapPin,
+  Star,
+  Check,
+  X,
+  Ban,
+  Sparkles,
+} from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   PageHeader,
   SearchInput,
@@ -28,6 +39,8 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { StoreDetailSheet } from "@/components/stores/StoreDetailSheet";
+import { FeaturedStoresPanel } from "@/components/stores/FeaturedStoresPanel";
+import { CreateFeaturedStoreSheet } from "@/components/stores/CreateFeaturedStoreSheet";
 import {
   getAdminStores,
   approveStore,
@@ -40,6 +53,7 @@ import {
   getStoreVisibility,
   normalizeStoreFromApi,
 } from "@/lib/storeUtils";
+import { normalizePaginationMeta } from "@/lib/paginationUtils";
 import { useToast } from "@/hooks/use-toast";
 
 type VisibilityFilter = "pending" | "published" | "all";
@@ -60,6 +74,9 @@ export default function StoresPage() {
   const [rejectDialogMode, setRejectDialogMode] = useState<RejectDialogMode>("reject");
   const [rejectionReason, setRejectionReason] = useState("");
   const [approvingStore, setApprovingStore] = useState<Store | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
+  const [createFeaturedOpen, setCreateFeaturedOpen] = useState(false);
+  const [featuringStore, setFeaturingStore] = useState<Store | null>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -109,7 +126,10 @@ export default function StoresPage() {
     });
   }, [storesResponse?.data?.stores, debouncedSearch]);
 
-  const paginationMeta = storesResponse?.data?.meta;
+  const paginationMeta = useMemo(
+    () => normalizePaginationMeta(storesResponse?.data?.meta, limit),
+    [storesResponse?.data?.meta, limit]
+  );
 
   useEffect(() => {
     if (isError) {
@@ -243,6 +263,16 @@ export default function StoresPage() {
           <>
             <DropdownMenuSeparator />
             <DropdownMenuItem
+              onClick={() => {
+                setFeaturingStore(store);
+                setCreateFeaturedOpen(true);
+              }}
+              className="cursor-pointer"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              Feature store
+            </DropdownMenuItem>
+            <DropdownMenuItem
               onClick={() => openRejectDialog(store, "suspend")}
               className="text-destructive focus:text-destructive cursor-pointer"
             >
@@ -272,9 +302,26 @@ export default function StoresPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Stores"
-        description="Review vendor stores before they appear on the marketplace"
+        description="Review vendor stores and manage marketplace spotlights"
       />
 
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="h-auto p-1 bg-muted/60">
+          <TabsTrigger value="all" className="gap-2 px-4 py-2">
+            <StoreIcon className="h-4 w-4" />
+            All stores
+          </TabsTrigger>
+          <TabsTrigger value="featured" className="gap-2 px-4 py-2">
+            <Star className="h-4 w-4" />
+            Featured
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="featured" className="mt-0">
+          <FeaturedStoresPanel />
+        </TabsContent>
+
+        <TabsContent value="all" className="space-y-4 mt-0">
       <div className="filter-bar">
         <SearchInput
           value={search}
@@ -487,6 +534,19 @@ export default function StoresPage() {
           )}
         </div>
       )}
+        </TabsContent>
+      </Tabs>
+
+      <CreateFeaturedStoreSheet
+        open={createFeaturedOpen}
+        onOpenChange={(open) => {
+          setCreateFeaturedOpen(open);
+          if (!open) setFeaturingStore(null);
+        }}
+        initialStoreId={featuringStore?.id}
+        initialStoreName={featuringStore?.name}
+        onCreated={() => setActiveTab("featured")}
+      />
 
       <StoreDetailSheet
         open={Boolean(viewingStore)}

@@ -74,7 +74,25 @@ export async function logout(): Promise<IApiResponse<void>> {
  * Get current user profile
  */
 export async function getProfile(): Promise<IApiResponse<User>> {
-  return api.get<User>("/auth/profile");
+  try {
+    const response = await api.get<{ user: User } | User>("/users/profile");
+    const data = response.data;
+
+    if (data && typeof data === "object" && "user" in data && data.user) {
+      return { ...response, data: data.user };
+    }
+
+    return response as IApiResponse<User>;
+  } catch {
+    const response = await api.get<{ user: User } | User>("/auth/profile");
+    const data = response.data;
+
+    if (data && typeof data === "object" && "user" in data && data.user) {
+      return { ...response, data: data.user };
+    }
+
+    return response as IApiResponse<User>;
+  }
 }
 
 /**
@@ -116,7 +134,7 @@ export async function resendOTP(data: ResendOTPRequest): Promise<IApiResponse<vo
  * Change password (authenticated)
  */
 export async function changePassword(data: ChangePasswordRequest): Promise<IApiResponse<void>> {
-  return api.post<void>("/auth/change-password", data);
+  return api.patch<void>("/users/change-password", data);
 }
 
 /**

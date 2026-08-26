@@ -37,6 +37,7 @@ import { Switch } from "@/components/ui/switch";
 import { getSubscriptionPlans, createSubscriptionPlan, updateSubscriptionPlan, deleteSubscriptionPlan, type GetSubscriptionPlansParams, type CreateSubscriptionPlanPayload, type UpdateSubscriptionPlanPayload } from "@/services/subscriptionPlansApi";
 import type { SubscriptionPlan } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function SubscriptionPlansPage() {
   const navigate = useNavigate();
@@ -46,6 +47,7 @@ export default function SubscriptionPlansPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
   const { toast } = useToast();
+  const { canManageApplicationData } = usePermissions();
   
   // Create dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -359,10 +361,12 @@ export default function SubscriptionPlansPage() {
           options={statusOptions}
           allLabel="All Statuses"
         />
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Plan
-        </Button>
+        {canManageApplicationData && (
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Plan
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -430,12 +434,16 @@ export default function SubscriptionPlansPage() {
                           <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(plan)} className="cursor-pointer">
-                            <Edit className="h-4 w-4 mr-2" />Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteClick(plan)} className="text-destructive focus:text-destructive cursor-pointer">
-                            <Trash2 className="h-4 w-4 mr-2" />Delete
-                          </DropdownMenuItem>
+                          {canManageApplicationData && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleEdit(plan)} className="cursor-pointer">
+                                <Edit className="h-4 w-4 mr-2" />Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteClick(plan)} className="text-destructive focus:text-destructive cursor-pointer">
+                                <Trash2 className="h-4 w-4 mr-2" />Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -459,12 +467,16 @@ export default function SubscriptionPlansPage() {
                       <Button variant="ghost" size="sm" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(plan)} className="cursor-pointer">
-                        <Edit className="h-4 w-4 mr-2" />Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDeleteClick(plan)} className="text-destructive focus:text-destructive cursor-pointer">
-                        <Trash2 className="h-4 w-4 mr-2" />Delete
-                      </DropdownMenuItem>
+                      {canManageApplicationData && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleEdit(plan)} className="cursor-pointer">
+                            <Edit className="h-4 w-4 mr-2" />Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDeleteClick(plan)} className="text-destructive focus:text-destructive cursor-pointer">
+                            <Trash2 className="h-4 w-4 mr-2" />Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>

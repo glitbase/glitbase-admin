@@ -17,9 +17,12 @@ import {
   Settings,
   Receipt,
   Sparkles,
+  Megaphone,
+  Shield,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 import {
   Sidebar,
   SidebarContent,
@@ -68,6 +71,7 @@ const contentItems = [
   { title: "Application Data", url: "/categories", icon: FolderTree },
   { title: "Reports", url: "/reports", icon: Flag },
   { title: "Recommended Providers", url: "/recommended-providers", icon: Star },
+  { title: "Announcements", url: "/announcements", icon: Megaphone },
 ];
 
 export function AppSidebar() {
@@ -76,6 +80,7 @@ export function AppSidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { canManageAdminTeam } = usePermissions();
 
   const isActive = (path: string) => {
     if (path === "/categories") {
@@ -178,6 +183,17 @@ export function AppSidebar() {
             </CollapsibleContent>
           </SidebarGroup>
         </Collapsible>
+
+        {canManageAdminTeam && (
+          <SidebarGroup>
+            <SidebarGroupLabel className={cn(collapsed && "sr-only")}>
+              Administration
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>{renderNavItem({ title: "Team", url: "/admin-team", icon: Shield })}</SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border p-2">

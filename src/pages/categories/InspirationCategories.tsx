@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import { getInspirationCategories, createInspirationCategory, updateInspirationCategory, deleteInspirationCategory, type GetInspirationCategoriesParams, type CreateInspirationCategoryPayload, type UpdateInspirationCategoryPayload } from "@/services/inspirationCategoriesApi";
 import type { InspirationCategory } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function InspirationCategoriesPage() {
@@ -47,6 +48,7 @@ export default function InspirationCategoriesPage() {
   const [page, setPage] = useState(1);
   const limit = 20;
   const { toast } = useToast();
+  const { canManageApplicationData } = usePermissions();
   
   // Create dialog state
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -323,10 +325,12 @@ export default function InspirationCategoriesPage() {
           options={typeOptions}
           allLabel="All Types"
         />
-        <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Category
-        </Button>
+        {canManageApplicationData && (
+          <Button onClick={() => setIsCreateDialogOpen(true)} className="sm:ml-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Category
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -392,12 +396,16 @@ export default function InspirationCategoriesPage() {
                           <Button variant="ghost" size="sm"><MoreHorizontal className="h-4 w-4" /></Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
-                            <Edit className="h-4 w-4 mr-2" />Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
-                            <Trash2 className="h-4 w-4 mr-2" />Delete
-                          </DropdownMenuItem>
+                          {canManageApplicationData && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
+                                <Edit className="h-4 w-4 mr-2" />Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
+                                <Trash2 className="h-4 w-4 mr-2" />Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -436,12 +444,16 @@ export default function InspirationCategoriesPage() {
                     <Button variant="ghost" size="sm" className="shrink-0"><MoreHorizontal className="h-4 w-4" /></Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
-                      <Edit className="h-4 w-4 mr-2" />Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
-                      <Trash2 className="h-4 w-4 mr-2" />Delete
-                    </DropdownMenuItem>
+                    {canManageApplicationData && (
+                      <>
+                        <DropdownMenuItem onClick={() => handleEdit(category)} className="cursor-pointer">
+                          <Edit className="h-4 w-4 mr-2" />Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleDeleteClick(category)} className="text-destructive focus:text-destructive cursor-pointer">
+                          <Trash2 className="h-4 w-4 mr-2" />Delete
+                        </DropdownMenuItem>
+                      </>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>

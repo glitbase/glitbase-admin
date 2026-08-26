@@ -34,12 +34,14 @@ import {
 } from "@/services/faqsApi";
 import type { FAQ } from "@/types/api";
 import { useToast } from "@/hooks/use-toast";
+import { usePermissions } from "@/hooks/usePermissions";
 
 const emptyForm: CreateFAQPayload = { question: "", answer: "", order: 0 };
 
 export default function FAQsPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const { canManageApplicationData } = usePermissions();
 
   // Create dialog
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -164,10 +166,12 @@ export default function FAQsPage() {
       <PageHeader title="Policies / FAQs" description="Manage frequently asked questions shown in the app" />
 
       <div className="filter-bar">
-        <Button onClick={() => setIsCreateOpen(true)} className="sm:ml-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          Add FAQ
-        </Button>
+        {canManageApplicationData && (
+          <Button onClick={() => setIsCreateOpen(true)} className="sm:ml-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            Add FAQ
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -222,15 +226,19 @@ export default function FAQsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleEdit(faq)}>
-                            <Edit className="h-4 w-4 mr-2" /> Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteClick(faq)}
-                            className="text-destructive focus:text-destructive"
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" /> Delete
-                          </DropdownMenuItem>
+                          {canManageApplicationData && (
+                            <>
+                              <DropdownMenuItem onClick={() => handleEdit(faq)}>
+                                <Edit className="h-4 w-4 mr-2" /> Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteClick(faq)}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -256,15 +264,19 @@ export default function FAQsPage() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleEdit(faq)}>
-                        <Edit className="h-4 w-4 mr-2" /> Edit
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => handleDeleteClick(faq)}
-                        className="text-destructive focus:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" /> Delete
-                      </DropdownMenuItem>
+                      {canManageApplicationData && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleEdit(faq)}>
+                            <Edit className="h-4 w-4 mr-2" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteClick(faq)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
