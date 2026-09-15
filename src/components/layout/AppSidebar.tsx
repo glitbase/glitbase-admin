@@ -19,6 +19,7 @@ import {
   Sparkles,
   Megaphone,
   Shield,
+  ClipboardList,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,6 +54,7 @@ import greenLogo from "@/assets/images/green-logo.svg";
 const mainNavItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Users", url: "/users", icon: Users },
+  { title: "Waitlist", url: "/waitlist", icon: ClipboardList },
   { title: "Stores", url: "/stores", icon: Store },
   { title: "Services", url: "/services", icon: Briefcase },
   { title: "Products", url: "/products", icon: Package },

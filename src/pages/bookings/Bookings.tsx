@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
-import { MoreHorizontal, Calendar, Eye, XCircle, RotateCcw, Edit, Gavel } from "lucide-react";
+import { MoreHorizontal, Calendar, Eye, XCircle, RotateCcw, Edit, Gavel, MessageSquare } from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -55,6 +55,7 @@ import {
   type UpdateBookingStatusPayload,
   type ResolveDisputePayload,
 } from "@/services/bookingsApi";
+import { BookingChatSheet } from "@/components/bookings/BookingChatSheet";
 import { getBookingProviderEmail, getBookingProviderName } from "@/lib/bookingUtils";
 import { middleTruncate } from "@/lib/utils";
 import { normalizeStoreFromApi } from "@/lib/storeUtils";
@@ -73,7 +74,9 @@ export default function BookingsPage() {
   const [sortBy, setSortBy] = useState<string>("newest");
   const [page, setPage] = useState(1);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [chatBooking, setChatBooking] = useState<Booking | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isChatSheetOpen, setIsChatSheetOpen] = useState(false);
   const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
   const [isRefundDialogOpen, setIsRefundDialogOpen] = useState(false);
   const [isUpdateStatusDialogOpen, setIsUpdateStatusDialogOpen] = useState(false);
@@ -650,6 +653,15 @@ export default function BookingsPage() {
                           <DropdownMenuItem onClick={() => { setSelectedBooking(booking); setIsSheetOpen(true); }} className="cursor-pointer">
                             <Eye className="h-4 w-4 mr-2" />View
                           </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => {
+                              setChatBooking(booking);
+                              setIsChatSheetOpen(true);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            <MessageSquare className="h-4 w-4 mr-2" />View chat
+                          </DropdownMenuItem>
                           {(canProcessRefunds || canResolveDisputes) && <DropdownMenuSeparator />}
                           {canProcessRefunds && (
                             <DropdownMenuItem onClick={() => handleRefundClick(booking)} className="cursor-pointer">
@@ -704,6 +716,15 @@ export default function BookingsPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => { setSelectedBooking(booking); setIsSheetOpen(true); }} className="cursor-pointer">
                         <Eye className="h-4 w-4 mr-2" />View
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setChatBooking(booking);
+                          setIsChatSheetOpen(true);
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <MessageSquare className="h-4 w-4 mr-2" />View chat
                       </DropdownMenuItem>
                       {(canProcessRefunds || canResolveDisputes) && <DropdownMenuSeparator />}
                       {canProcessRefunds && (
@@ -1495,6 +1516,15 @@ export default function BookingsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <BookingChatSheet
+        open={isChatSheetOpen}
+        onOpenChange={(open) => {
+          setIsChatSheetOpen(open);
+          if (!open) setChatBooking(null);
+        }}
+        booking={chatBooking}
+      />
     </div>
   );
 }
