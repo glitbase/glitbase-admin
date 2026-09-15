@@ -1,5 +1,5 @@
 import { api } from "./baseQuery";
-import { IApiResponse, Booking, PaginationMeta } from "@/types/api";
+import { IApiResponse, Booking, BookingChatResponse, PaginationMeta } from "@/types/api";
 
 /**
  * Bookings API endpoints
@@ -167,4 +167,23 @@ export async function resolveDispute(
   );
 }
 
+export interface GetBookingChatParams {
+  page?: number;
+  limit?: number;
+  before?: string;
+}
+
+export async function getBookingChat(
+  reference: string,
+  params?: GetBookingChatParams
+): Promise<IApiResponse<BookingChatResponse>> {
+  const queryParams: Record<string, string | number | undefined> = {};
+  if (params?.page != null) queryParams.page = params.page;
+  if (params?.limit != null) queryParams.limit = params.limit;
+  if (params?.before) queryParams.before = params.before;
+
+  return api.get<BookingChatResponse>(`/admin/bookings/${encodeURIComponent(reference)}/chat`, {
+    params: queryParams,
+  });
+}
 

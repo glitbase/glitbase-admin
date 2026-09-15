@@ -29,6 +29,7 @@ import ReportsPage from "@/pages/Reports";
 import RecommendedProvidersPage from "@/pages/RecommendedProviders";
 import GlitFinderPage from "@/pages/GlitFinder";
 import AnnouncementsPage from "@/pages/announcements/Announcements";
+import WaitlistPage from "@/pages/waitlist/Waitlist";
 import AdminTeamPage from "@/pages/admins/AdminTeam";
 import { SuperAdminRoute } from "@/components/auth/SuperAdminRoute";
 import NotFound from "@/pages/NotFound";
@@ -67,6 +68,7 @@ const App = () => (
                 </Route>
                 <Route path="/reports" element={<ReportsPage />} />
                 <Route path="/announcements" element={<AnnouncementsPage />} />
+                <Route path="/waitlist" element={<WaitlistPage />} />
                 <Route
                   path="/admin-team"
                   element={

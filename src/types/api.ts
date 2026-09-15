@@ -628,3 +628,76 @@ export interface FeaturedStoreEntry {
   createdAt: Date;
   updatedAt: Date;
 }
+
+export type WaitlistUserType = "customer" | "vendor";
+
+export interface WaitlistSocialMediaHandle {
+  platform: string;
+  handle: string;
+}
+
+export interface WaitlistEntry {
+  id: string;
+  name: string;
+  email: string;
+  userType: WaitlistUserType;
+  businessName?: string;
+  socialMedia: WaitlistSocialMediaHandle[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ChatParticipant {
+  id: string;
+  _id?: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  profileImageUrl?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  sender: ChatParticipant | string;
+  chatId: string;
+  type: "text" | "image";
+  content?: string | null;
+  imageUrl?: string | null;
+  imageCaption?: string | null;
+  isRead: boolean;
+  readAt?: Date | string | null;
+  isDeleted: boolean;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+}
+
+export interface BookingChatSummary {
+  id: string;
+  gId?: string;
+  bookingReference: string;
+  displayId: string;
+}
+
+export interface BookingChatDocument {
+  id: string;
+  chatId: string;
+  type?: string;
+  lastMessageAt?: Date | string;
+  isActive?: boolean;
+  title?: string;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
+
+export interface BookingChatParticipants {
+  customer: ChatParticipant | null;
+  vendor: ChatParticipant | null;
+}
+
+export interface BookingChatResponse {
+  booking: BookingChatSummary;
+  participants: BookingChatParticipants;
+  chat: BookingChatDocument | null;
+  messages: ChatMessage[];
+  meta: PaginationMeta;
+}
