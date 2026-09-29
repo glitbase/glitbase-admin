@@ -68,3 +68,22 @@ export async function createUser(
   return api.post<CreateUserResponse>("/admin/users", payload);
 }
 
+export interface SendAdminUserEmailPayload {
+  subject: string;
+  message: string;
+}
+
+export interface SendAdminUserEmailResponse {
+  recipient: {
+    id: string;
+    email: string;
+  };
+}
+
+export async function sendAdminUserEmail(
+  userId: string,
+  payload: SendAdminUserEmailPayload
+): Promise<IApiResponse<SendAdminUserEmailResponse>> {
+  return api.post<SendAdminUserEmailResponse>(`/admin/users/${userId}/email`, payload);
+}
+

@@ -21,7 +21,52 @@ export interface PaginationMeta {
 
 export type UserRole = "admin" | "vendor" | "customer";
 
-export type AccountSource = "self_registration" | "admin_created" | "invite";
+export type AccountSource = "self_registration" | "self_signup" | "admin_created" | "invite";
+
+export type AccountStatus = "active" | "suspended" | "deleted" | string;
+
+export type RegistrationStatus = string;
+
+export interface UserPreferredLocation {
+  name?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipcode?: string;
+  geoPoint?: {
+    type?: string;
+    coordinates?: [number, number];
+  };
+}
+
+export interface UserGlitfinderNotificationPreferences {
+  postLikes?: boolean;
+  newFollowers?: boolean;
+  trendingContent?: boolean;
+  personalisedRecommendations?: boolean;
+}
+
+export interface UserNotificationPreferences {
+  bookingConfirmations?: boolean;
+  providerUpdates?: boolean;
+  newMessages?: boolean;
+  newOrderNotifications?: boolean;
+  orderUpdates?: boolean;
+  paymentConfirmations?: boolean;
+  glitfinder?: UserGlitfinderNotificationPreferences;
+}
+
+export interface UserSubscriptionDetail {
+  subscriptionType?: SubscriptionType | string;
+  subscriptionStartDate?: Date | string;
+  subscriptionEndDate?: Date | string;
+  planId?: string;
+  paymentMethodId?: string;
+  isActive?: boolean;
+  isCancelled?: boolean;
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
+}
 
 export type InviteRole = "customer" | "vendor";
 
@@ -58,6 +103,7 @@ export interface User {
   id: string;
   firstName?: string;
   lastName?: string;
+  displayName?: string | null;
   email: string;
   phoneNumber?: string;
   profileImageUrl?: string;
@@ -68,13 +114,33 @@ export interface User {
   mustChangePassword?: boolean;
   isEmailVerified: boolean;
   isPhoneNumberVerified: boolean;
+  isPasswordSet?: boolean;
+  passwordChangedAt?: Date | string;
+  isProfileComplete?: boolean;
   countryName?: string;
   countryCode?: string;
   vendorOnboardingStatus?: VendorOnboardingStatus;
-  subscriptionType?: SubscriptionType;
+  subscriptionType?: SubscriptionType | string;
   isSubscriptionActive?: boolean;
-  accountSource?: AccountSource;
-  invitedBy?: UserSummary;
+  subscriptionStartDate?: Date | string;
+  subscriptionEndDate?: Date | string;
+  accountSource?: AccountSource | string;
+  accountStatus?: AccountStatus;
+  registrationStatus?: RegistrationStatus;
+  invitedBy?: UserSummary | string;
+  deletedAt?: Date | string | null;
+  deletionReason?: string | null;
+  googleId?: string | null;
+  appleId?: string | null;
+  stripeCustomerId?: string | null;
+  preferredLocation?: UserPreferredLocation;
+  hasPayoutInfo?: boolean;
+  hasSubInfo?: boolean;
+  hasUsedFreeTrial?: boolean;
+  hasStore?: boolean;
+  notificationPreferences?: UserNotificationPreferences;
+  interests?: string[];
+  userSubscription?: UserSubscriptionDetail;
   createdAt: Date;
   updatedAt: Date;
 }
