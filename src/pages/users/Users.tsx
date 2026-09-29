@@ -28,6 +28,11 @@ import {
   InviteLinkBanner,
 } from "@/components/users/CreateInviteSheet";
 import { InvitesPanel } from "@/components/users/InvitesPanel";
+import { UserDetailSheet } from "@/components/users/UserDetailSheet";
+import {
+  SendUserEmailDialog,
+  type SendUserEmailTarget,
+} from "@/components/users/SendUserEmailDialog";
 
 export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("users");
@@ -38,6 +43,10 @@ export default function UsersPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [emailTarget, setEmailTarget] = useState<SendUserEmailTarget | null>(null);
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
   const limit = 20;
   const { toast } = useToast();
 
@@ -141,6 +150,7 @@ export default function UsersPage() {
       case "invite":
         return "Invite";
       case "self_registration":
+      case "self_signup":
         return "Self registered";
       default:
         return "—";
@@ -154,6 +164,18 @@ export default function UsersPage() {
       return `${firstName ?? ""} ${lastName ?? ""}`.trim();
     }
     return email;
+  };
+
+  const openSendEmail = (user: User) => {
+    setEmailTarget({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      accountStatus: user.accountStatus,
+      deletedAt: user.deletedAt,
+    });
+    setIsEmailDialogOpen(true);
   };
 
   const exportUsers = async () => {
@@ -403,11 +425,20 @@ export default function UsersPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => {
+                              setSelectedUser(user);
+                              setIsDetailOpen(true);
+                            }}
+                          >
                             <Eye className="h-4 w-4 mr-2" />
                             View details
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => openSendEmail(user)}
+                          >
                             <Mail className="h-4 w-4 mr-2" />
                             Send email
                           </DropdownMenuItem>
@@ -448,11 +479,20 @@ export default function UsersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => {
+                            setSelectedUser(user);
+                            setIsDetailOpen(true);
+                          }}
+                        >
                           <Eye className="h-4 w-4 mr-2" />
                           View details
                         </DropdownMenuItem>
-                        <DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onClick={() => openSendEmail(user)}
+                        >
                           <Mail className="h-4 w-4 mr-2" />
                           Send email
                         </DropdownMenuItem>
@@ -514,6 +554,23 @@ export default function UsersPage() {
           setPendingInviteUrl(url);
           setActiveTab("invites");
         }}
+      />
+
+      <UserDetailSheet
+        open={isDetailOpen}
+        onOpenChange={(open) => {
+          setIsDetailOpen(open);
+          if (!open) setSelectedUser(null);
+        }}
+        userId={selectedUser?.id ?? null}
+        preview={selectedUser}
+        onSendEmail={(user) => openSendEmail(user)}
+      />
+
+      <SendUserEmailDialog
+        open={isEmailDialogOpen}
+        onOpenChange={setIsEmailDialogOpen}
+        user={emailTarget}
       />
     </div>
   );
