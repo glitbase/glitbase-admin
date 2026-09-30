@@ -20,6 +20,7 @@ import {
   ExternalLink,
   Hash,
   BadgeCheck,
+  Trash2,
 } from "lucide-react";
 import {
   Sheet,
@@ -41,6 +42,9 @@ interface UserDetailSheetProps {
   userId: string | null;
   preview?: User | null;
   onSendEmail?: (user: User) => void;
+  onDeleteAccount?: (user: User) => void;
+  currentUserId?: string | null;
+  canDeleteAccount?: (user: User) => boolean;
 }
 
 function formatDateTime(value?: Date | string | null) {
@@ -330,6 +334,9 @@ export function UserDetailSheet({
   userId,
   preview,
   onSendEmail,
+  onDeleteAccount,
+  currentUserId,
+  canDeleteAccount,
 }: UserDetailSheetProps) {
   const { data, isLoading, isError, error } = useQuery({
     queryKey: ["user-detail", userId],
@@ -757,6 +764,38 @@ export function UserDetailSheet({
                   </div>
                 </div>
               </SectionCard>
+
+              {onDeleteAccount &&
+                canDeleteAccount?.(user) &&
+                !isDeleted &&
+                user.id !== currentUserId && (
+                  <section className="rounded-xl border border-destructive/35 bg-gradient-to-br from-destructive/10 via-destructive/5 to-transparent overflow-hidden">
+                    <div className="px-4 py-3.5 border-b border-destructive/20 flex items-start gap-3">
+                      <div className="h-9 w-9 rounded-lg bg-destructive/15 flex items-center justify-center shrink-0">
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold text-destructive">Danger zone</h3>
+                        <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+                          Soft-delete this account: anonymize PII, unpublish vendor content, and cancel
+                          Stripe subscriptions. Requires a reason and passes eligibility checks.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="shadow-sm"
+                        onClick={() => onDeleteAccount(user)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1.5" />
+                        Delete account
+                      </Button>
+                    </div>
+                  </section>
+                )}
             </div>
           </>
         ) : null}

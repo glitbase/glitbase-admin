@@ -1,5 +1,10 @@
 import { api } from "./baseQuery";
-import { IApiResponse, User, PaginationMeta } from "@/types/api";
+import {
+  IApiResponse,
+  User,
+  PaginationMeta,
+  AccountDeletionEligibility,
+} from "@/types/api";
 
 /**
  * Users API endpoints
@@ -85,5 +90,23 @@ export async function sendAdminUserEmail(
   payload: SendAdminUserEmailPayload
 ): Promise<IApiResponse<SendAdminUserEmailResponse>> {
   return api.post<SendAdminUserEmailResponse>(`/admin/users/${userId}/email`, payload);
+}
+
+export async function getAdminUserDeleteEligibility(
+  userId: string
+): Promise<IApiResponse<AccountDeletionEligibility>> {
+  return api.get<AccountDeletionEligibility>(`/admin/users/${userId}/delete/eligibility`);
+}
+
+export interface AdminDeleteUserPayload {
+  reason: string;
+  force?: boolean;
+}
+
+export async function adminDeleteUser(
+  userId: string,
+  payload: AdminDeleteUserPayload
+): Promise<IApiResponse<Record<string, never>>> {
+  return api.post<Record<string, never>>(`/admin/users/${userId}/delete`, payload);
 }
 

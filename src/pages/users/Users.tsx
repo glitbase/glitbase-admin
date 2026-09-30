@@ -1,6 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MoreHorizontal, Mail, Eye, Users as UsersIcon, Download, UserPlus, Link2 } from "lucide-react";
+import {
+  MoreHorizontal,
+  Mail,
+  Eye,
+  Users as UsersIcon,
+  Download,
+  UserPlus,
+  Link2,
+  Trash2,
+} from "lucide-react";
 import {
   PageHeader,
   SearchInput,
@@ -15,6 +24,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
@@ -33,6 +43,12 @@ import {
   SendUserEmailDialog,
   type SendUserEmailTarget,
 } from "@/components/users/SendUserEmailDialog";
+import {
+  DeleteUserAccountDialog,
+  type DeleteUserAccountTarget,
+} from "@/components/users/DeleteUserAccountDialog";
+import { useAuth } from "@/contexts/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export default function UsersPage() {
   const [activeTab, setActiveTab] = useState("users");
@@ -47,8 +63,12 @@ export default function UsersPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [emailTarget, setEmailTarget] = useState<SendUserEmailTarget | null>(null);
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteUserAccountTarget | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const limit = 20;
   const { toast } = useToast();
+  const { user: currentUser } = useAuth();
+  const { isSuperAdmin } = usePermissions();
 
   // Debounce search input
   useEffect(() => {
@@ -176,6 +196,28 @@ export default function UsersPage() {
       deletedAt: user.deletedAt,
     });
     setIsEmailDialogOpen(true);
+  };
+
+  const openDeleteAccount = (user: User) => {
+    setDeleteTarget({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      roles: user.roles,
+      isSuperAdmin: user.isSuperAdmin,
+      accountStatus: user.accountStatus,
+      deletedAt: user.deletedAt,
+    });
+    setIsDeleteDialogOpen(true);
+  };
+
+  const canShowDeleteAction = (user: User) => {
+    if (user.id === currentUser?.id) return false;
+    if (user.deletedAt || user.accountStatus === "deleted") return false;
+    const isAdminUser = Boolean(user.isSuperAdmin || user.roles?.includes("admin"));
+    if (isAdminUser && !isSuperAdmin) return false;
+    return true;
   };
 
   const exportUsers = async () => {
@@ -442,6 +484,18 @@ export default function UsersPage() {
                             <Mail className="h-4 w-4 mr-2" />
                             Send email
                           </DropdownMenuItem>
+                          {canShowDeleteAction(user) && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="cursor-pointer text-destructive focus:text-destructive"
+                                onClick={() => openDeleteAccount(user)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete account
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -496,6 +550,18 @@ export default function UsersPage() {
                           <Mail className="h-4 w-4 mr-2" />
                           Send email
                         </DropdownMenuItem>
+                        {canShowDeleteAction(user) && (
+                          <>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="cursor-pointer text-destructive focus:text-destructive"
+                              onClick={() => openDeleteAccount(user)}
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete account
+                            </DropdownMenuItem>
+                          </>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
@@ -565,12 +631,26 @@ export default function UsersPage() {
         userId={selectedUser?.id ?? null}
         preview={selectedUser}
         onSendEmail={(user) => openSendEmail(user)}
+        onDeleteAccount={(user) => openDeleteAccount(user)}
+        currentUserId={currentUser?.id}
+        canDeleteAccount={canShowDeleteAction}
       />
 
       <SendUserEmailDialog
         open={isEmailDialogOpen}
         onOpenChange={setIsEmailDialogOpen}
         user={emailTarget}
+      />
+
+      <DeleteUserAccountDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+        user={deleteTarget}
+        currentUserId={currentUser?.id}
+        onDeleted={() => {
+          setIsDetailOpen(false);
+          setSelectedUser(null);
+        }}
       />
     </div>
   );

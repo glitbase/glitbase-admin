@@ -1,8 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
+import { resolveIsSuperAdmin } from "@/lib/authUtils";
 
 export function usePermissions() {
   const { user } = useAuth();
-  const isSuperAdmin = Boolean(user?.isSuperAdmin);
+  const isSuperAdmin = resolveIsSuperAdmin(user);
 
   return {
     isSuperAdmin,
