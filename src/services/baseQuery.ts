@@ -148,7 +148,12 @@ export async function baseQuery<T = any>(
 
     // Handle API-level errors
     if (!response.ok) {
-      throw new Error(data.message || `HTTP ${response.status}: ${response.statusText}`);
+      const err = new Error(
+        data.message || `HTTP ${response.status}: ${response.statusText}`
+      ) as Error & { status?: number; data?: unknown };
+      err.status = response.status;
+      err.data = data.data;
+      throw err;
     }
 
     return data;

@@ -25,6 +25,26 @@ export type AccountSource = "self_registration" | "self_signup" | "admin_created
 
 export type AccountStatus = "active" | "suspended" | "deleted" | string;
 
+export type AccountDeletionBlockerCode =
+  | "ADMIN_ACCOUNT"
+  | "ACTIVE_BOOKINGS"
+  | "OPEN_DISPUTES"
+  | "WALLET_BALANCE"
+  | "PENDING_PAYOUTS";
+
+export interface AccountDeletionBlocker {
+  code: AccountDeletionBlockerCode | string;
+  count?: number;
+  amount?: number;
+  currency?: string;
+  message: string;
+}
+
+export interface AccountDeletionEligibility {
+  eligible: boolean;
+  blockers: AccountDeletionBlocker[];
+}
+
 export type RegistrationStatus = string;
 
 export interface UserPreferredLocation {

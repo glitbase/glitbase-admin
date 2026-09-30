@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setAuth, setUser, clearAuth } from "@/store/authSlice";
 import { login as loginApi, getProfile, logout as logoutApi } from "@/services/authApi";
 import { setAuthToken, setRefreshToken, removeAuthToken } from "@/services/baseQuery";
+import { resolveIsSuperAdmin } from "@/lib/authUtils";
 
 interface AuthContextType {
   user: User | null;
@@ -116,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         isAuthenticated,
-        isSuperAdmin: Boolean(user?.isSuperAdmin),
+        isSuperAdmin: resolveIsSuperAdmin(user),
         login,
         logout,
         refreshUser,
